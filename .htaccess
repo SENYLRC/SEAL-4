@@ -1,0 +1,12 @@
+# ILL System plugin folder: only the PHP the plugin loads and its assets are meant for the web.
+# Notes, docs, logs and the cron scripts must never be downloadable (STATUS.md holds server details).
+<FilesMatch "\.(md|txt|inc|log|sh|json|bak)$">
+    Require all denied
+</FilesMatch>
+# No plugin PHP file is ever requested directly: WordPress loads them from disk (pages, admin, admin-ajax, wp-login).
+# Blocking them stops anyone probing the code from outside (each file also exits without WordPress).
+<FilesMatch "\.(php|phtml|phar)$">
+    Require all denied
+</FilesMatch>
+RedirectMatch 404 /seal-ill-system/(cron|docs|includes/lib)(/|$)
+Options -Indexes

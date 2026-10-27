@@ -1,0 +1,1332 @@
+/**
+ * seal-style.css — Southeastern ILL System
+ * Complete frontend styles for the plugin AND the theme's ILL-specific CSS.
+ * Version: 3.3.0
+ *
+ * Sections:
+ *  1. Plugin utility classes (alerts, tables, buttons, pagination, a11y)
+ *  2. Theme layout / general
+ *  3. ILL data tables (responsive-table)
+ *  4. Status badges
+ *  5. ILL directory cards
+ *  6. Library profile / form styles
+ *  7. Admin library management
+ *  8. Filter bar
+ *  9. Request history subrows
+ * 10. Datepicker overrides
+ */
+
+/* ════════════════════════════════════════════════════════════
+   1. PLUGIN UTILITIES
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Alerts ─────────────────────────────────────────────────── */
+.seal-alert {
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+    border-left: 4px solid transparent;
+}
+.seal-alert-success { background: #d4edda; color: #155724; border-color: #28a745; }
+.seal-alert-error   { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+.seal-alert-warning { background: #fff3cd; color: #856404; border-color: #ffc107; }
+.seal-alert-info    { background: #d1ecf1; color: #0c5460; border-color: #17a2b8; }
+
+.seal-access-denied {
+    padding: 20px;
+    color: #721c24;
+    font-weight: bold;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+/* ── Screen-reader only ─────────────────────────────────────── */
+.seal-sr-only,
+.screen-reader-text {
+    position: absolute !important;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.seal-btn-primary,
+.seal-btn-secondary,
+.seal-btn-danger,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.export-btn,
+.loan-btn {
+    display: inline-block;
+    padding: 7px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    font-size: .9em;
+    line-height: 1.4;
+    font-weight: 600;
+}
+.seal-btn-primary, .btn-primary, .export-btn {
+    background: var(--seal-brand, #4a4180); color: #fff;
+}
+.seal-btn-primary:hover, .btn-primary:hover, .export-btn:hover {
+    background: var(--seal-brand-dark, #1d1f40); color: #fff;
+}
+.seal-btn-secondary, .btn-secondary {
+    background: var(--seal-accent, #3fbb86); color: var(--seal-brand-dark, #1d1f40);
+}
+.seal-btn-secondary:hover, .btn-secondary:hover {
+    background: var(--seal-accent, #3fbb86); color: var(--seal-brand-dark, #1d1f40);
+    filter: brightness(.92);
+}
+.seal-btn-danger, .btn-danger {
+    background: #c0392b; color: #fff;
+}
+.seal-btn-danger:hover, .btn-danger:hover {
+    background: #962d22; color: #fff;
+}
+.loan-btn {
+    background: var(--seal-brand, #4a4180); color: #fff;
+    font-size: 13px; padding: 6px 12px;
+}
+.loan-btn:hover { background: var(--seal-brand-dark, #1d1f40); }
+
+/* ── Pagination ──────────────────────────────────────────────── */
+.seal-pagination ul {
+    display: flex; list-style: none;
+    gap: 4px; padding: 0; margin: 16px 0; flex-wrap: wrap;
+}
+.seal-pagination li a {
+    display: block; padding: 4px 10px;
+    border: 1px solid #ddd; border-radius: 3px;
+    text-decoration: none; color: var(--seal-brand, #4a4180);
+}
+.seal-pagination li.current a {
+    background: var(--seal-brand, #4a4180); color: #fff; border-color: var(--seal-brand, #4a4180);
+}
+
+/* ── Focus ring ──────────────────────────────────────────────── */
+:focus-visible { outline: 3px solid var(--seal-brand, #4a4180); outline-offset: 2px; }
+
+/* ════════════════════════════════════════════════════════════
+   2. THEME LAYOUT / GENERAL
+   ════════════════════════════════════════════════════════════ */
+
+.header-top { background-color: #E0E6ED; }
+
+.nv-page-title { display: none; } /* hide "Home" title */
+h6 { margin-bottom: 0; }
+
+.cdlc_row   { width: 50%; margin: 0 auto; }
+.ill_row    { width: 100%; text-align: center; margin-left: 28%; }
+
+.cdlc-search-block { float: left; display: inline-block; }
+.CDLC_login        { float: right; width: 200px; display: inline-block; }
+
+.nv-content-wrap.entry-content {
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+.component-wrap { display: none; }
+main#content    { background: #f4f4ef; }
+
+/* ── User info display (UserDisplayTest snippet) ─────────────── */
+.seal-user-info-block {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    font-size: .95em;
+    line-height: 1.7;
+}
+.seal-user-info-block p { margin: 2px 0; }
+
+/* ════════════════════════════════════════════════════════════
+   3. ILL DATA TABLES (responsive-table & rh-table)
+   ════════════════════════════════════════════════════════════ */
+
+.seal-table-wrap,
+.responsive-table-wrap { overflow-x: auto; position: relative; }   /* relative: keeps screen-reader-only spans inside the scroll area (no page-wide sideways scroll) */
+
+/* Shared base — seal-table is the plugin class, responsive-table the theme class */
+.seal-table,
+.responsive-table,
+.rh-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.seal-table th,  .seal-table td,
+.responsive-table th, .responsive-table td,
+.rh-table th, .rh-table td {
+    border: 2px solid #666;
+    padding: 7px 9px;
+    text-align: left;
+    word-break: normal;
+    overflow-wrap: break-word;
+    white-space: normal;
+    vertical-align: top;
+    font-size: .9rem;
+}
+
+/* High-contrast headers */
+.seal-table thead th,
+.responsive-table th,
+.rh-table th {
+    background-color: var(--seal-brand, #4a4180);
+    color: #fff;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-color: var(--seal-brand, #4a4180);
+}
+
+/* Header labels should wrap on spaces, never break mid-word
+   (prevents "STATU S" / "NEED BY" splitting awkwardly). */
+.seal-table thead th,
+.responsive-table th,
+.rh-table th {
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+}
+
+/* All-Requests table: 9 columns in fixed layout with pixel widths sized to fit beside the
+   sidebar (~860px). Chrome ignores min-width on cells, so widths are set explicitly; the
+   table keeps its minimum width and scrolls inside .seal-table-wrap on narrow screens. */
+/* Widths add up to ~800px so the table fits the ~840px beside the sidebar with its borders (was 846/880px,
+   which pushed the Status column past the edge; the scrollbar only showed at the bottom of a long list). */
+.rh-table.allreq-table { table-layout: fixed; width: 100%; min-width: 792px; }
+.rh-table.allreq-table th, .rh-table.allreq-table td { padding: 6px 7px; font-size: .85rem; box-sizing: border-box; }   /* widths below include padding + border */
+.rh-table.allreq-table th:nth-child(1), .rh-table.allreq-table td:nth-child(1) { width: 86px; }    /* ILL # */
+.rh-table.allreq-table th:nth-child(2), .rh-table.allreq-table td:nth-child(2) { width: 112px; }   /* Title / Author */
+.rh-table.allreq-table th:nth-child(3), .rh-table.allreq-table td:nth-child(3) { width: 50px; }    /* Type */
+.rh-table.allreq-table th:nth-child(4), .rh-table.allreq-table td:nth-child(4) { width: 70px; }    /* Need By */
+.rh-table.allreq-table th:nth-child(5), .rh-table.allreq-table td:nth-child(5) { width: 96px; }    /* Lender */
+.rh-table.allreq-table th:nth-child(6), .rh-table.allreq-table td:nth-child(6) { width: 104px; }   /* Borrower */
+.rh-table.allreq-table th:nth-child(7), .rh-table.allreq-table td:nth-child(7) { width: 80px; }    /* Due Date / Shipping */
+.rh-table.allreq-table th:nth-child(8), .rh-table.allreq-table td:nth-child(8) { width: 88px; }    /* Timestamp */
+.rh-table.allreq-table th:nth-child(9), .rh-table.allreq-table td:nth-child(9) { width: 106px; }   /* Status / ILLiad # */
+
+.rh-table.allreq-table td:nth-child(1), .rh-table.allreq-table td:nth-child(8) { white-space: nowrap; }
+/* System Requests (allrequests-ls): 8 columns, no Type */
+.rh-table.allreq-table.allreq-ls { min-width: 804px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(1), .rh-table.allreq-table.allreq-ls td:nth-child(1) { width: 86px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(2), .rh-table.allreq-table.allreq-ls td:nth-child(2) { width: 144px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(3), .rh-table.allreq-table.allreq-ls td:nth-child(3) { width: 70px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(4), .rh-table.allreq-table.allreq-ls td:nth-child(4) { width: 104px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(5), .rh-table.allreq-table.allreq-ls td:nth-child(5) { width: 118px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(6), .rh-table.allreq-table.allreq-ls td:nth-child(6) { width: 84px; }
+.rh-table.allreq-table.allreq-ls th:nth-child(7), .rh-table.allreq-table.allreq-ls td:nth-child(7) { width: 88px; white-space: nowrap; }
+.rh-table.allreq-table.allreq-ls th:nth-child(8), .rh-table.allreq-table.allreq-ls td:nth-child(8) { width: 110px; white-space: normal; }
+.rh-table.allreq-table td.status-cell .status-text { margin-bottom: 3px; }
+.rh-table.allreq-table td.status-cell .shiptxt     { margin-bottom: 4px; }
+
+/* Zebra striping */
+.seal-table tbody tr:nth-child(odd)   td,
+.responsive-table tr:nth-child(odd)   td { background: #ffffff; }
+.seal-table tbody tr:nth-child(even)  td,
+.responsive-table tr:nth-child(even)  td,
+.rh-table tr:nth-child(even)          td { background: #e6e6e6; }
+
+/* Group-level striping (overrides zebra) */
+.responsive-table tr.group-odd  td { background: #ffffff; }
+.responsive-table tr.group-even td { background: #e6e6e6; }
+
+/* Column widths for responsive-table */
+.responsive-table th:nth-child(1),
+.responsive-table td:nth-child(1),
+.responsive-table th:nth-child(2),
+.responsive-table td:nth-child(2) { width:92px; min-width:92px; text-align:center; }
+.responsive-table th:nth-child(3), .responsive-table td:nth-child(3) { width:150px; max-width:150px; }
+.responsive-table th:nth-child(4), .responsive-table td:nth-child(4) { width: 83px; max-width: 83px; }
+.responsive-table th:nth-child(5), .responsive-table td:nth-child(5) { width:138px; max-width:138px; }
+.responsive-table th:nth-child(7), .responsive-table td:nth-child(7) { width:127px; max-width:127px; }
+.responsive-table th:nth-child(8), .responsive-table td:nth-child(8) { width:109px; max-width:109px; }
+
+/* AdminLib alias column */
+.rh-table th.col-alias, .rh-table td.col-alias {
+    width:120px; max-width:120px;
+    white-space: wrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* Small screens */
+@media (max-width: 600px) {
+    .responsive-table th,
+    .responsive-table td,
+    .rh-table th,
+    .rh-table td { font-size: 12px; padding: 4px; }
+    .responsive-table th:nth-child(1),
+    .responsive-table td:nth-child(1) { font-size: 11px; padding: 2px; }
+}
+
+/* Focus within table cells */
+.responsive-table td button,
+.responsive-table td a,
+.rh-table td button,
+.rh-table td a { outline: none; }
+.responsive-table td button:focus,
+.responsive-table td a:focus,
+.rh-table td button:focus,
+.rh-table td a:focus {
+    outline: 3px solid var(--seal-brand, #4a4180); outline-offset: 2px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   4. STATUS BADGES
+   ════════════════════════════════════════════════════════════ */
+
+.status-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.status-badge.reminder   { background:linear-gradient(135deg,#ffe066,#ffd43b); border:1px solid #d4b200; color:#000; }
+.status-badge.expired    { background:#a02020; border:1px solid #7f1919; color:#fff; }
+.status-badge.notfilled  { background:#b22626; border:1px solid #8f1d1d; color:#fff; }
+.status-badge.filled     { background:#257a37; border:1px solid #1b6d2b; color:#fff; }
+.status-badge.pending    { background:#1864ab; border:1px solid #124e88; color:#fff; }
+.status-badge.cancelled  { background:#5c636a; border:1px solid #495057; color:#fff; }
+
+.status-text { font-weight: 600; margin-bottom: 2px; }
+.shiptxt     { font-size: .9em; color: #555; }
+.illiad-id   { font-size: .85em; color: #444; margin-top: 3px; }
+
+/* Text color helpers */
+.green-text  { color: #257a37; }
+.red-text    { color: #c92a2a; }
+.orange-text { color: #8a5300; }
+
+/* ════════════════════════════════════════════════════════════
+   5. ILL DIRECTORY CARDS
+   ════════════════════════════════════════════════════════════ */
+
+.illDirGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(45%, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+.illDirCard {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    font-size: 14px;
+    line-height: 1.5;
+}
+.illDirCard h4 { margin: 0 0 10px; font-size: 16px; color: var(--seal-brand-dark, #1d1f40); }
+.illDirCard p  { margin: 6px 0; }
+.loan-btn {
+    background: var(--seal-brand, #4a4180);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    margin-top: 10px;
+}
+.loan-btn:hover { background: var(--seal-brand-dark, #1d1f40); }
+.loaning-options { margin-top: 0; padding: 0 2px; }
+.loaning-options.open {
+    padding: 10px 2px;
+    background: #f9f9f9;
+    border-top: 1px solid #ddd;
+    margin-top: 8px;
+}
+.pagination { margin-top: 20px; text-align: center; }
+.pagination a {
+    margin: 0 5px;
+    padding: 6px 12px;
+    background: #eee;
+    border-radius: 4px;
+    text-decoration: none;
+}
+.pagination a:hover { background: #ddd; }
+.clear-btn {
+    margin-left: 10px;
+    padding: 6px 12px;
+    background: #ccc;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 13px;
+    color: #000;
+}
+.clear-btn:hover { background: #bbb; }
+.illDirActions { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.illDirActions .clear-btn { margin-left: 0; }
+
+/* The theme prints the page title as a screen-reader-only h1; show it on the directory. */
+body.seal-route-illdir .nv-single-page-wrap > h1.screen-reader-text {
+    position: static !important;
+    width: auto; height: auto;
+    margin: 24px 15px 20px; padding: 0 0 8px;
+    overflow: visible; clip: auto; clip-path: none;
+    white-space: normal;
+    font-size: 2rem; font-weight: 400; line-height: 1.2;
+    border-bottom: 1px solid #4ab885;
+}
+@media (max-width: 700px) {
+    .illDirGrid { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   6. LIBRARY PROFILE / FORMS
+   ════════════════════════════════════════════════════════════ */
+
+.LibProfile_Form {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px 20px;
+}
+
+/* Section cards */
+.section-card {
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    border-radius: 10px;
+    margin-bottom: 20px;
+    padding: 20px;
+}
+.section-card h4 {
+    margin-top: 0;
+    font-size: 1.2rem;
+    border-bottom: 2px solid #E0E6ED;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+/* Form grids */
+.form-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: 15px 25px;
+}
+.form-section.two-col {
+    grid-template-columns: repeat(2, minmax(min(280px, 100%), 1fr));
+}
+@media (max-width: 700px) {
+    .form-section.two-col { grid-template-columns: 1fr; }
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1em;
+}
+@media (max-width: 600px) { .form-grid { grid-template-columns: minmax(0, 1fr); } }
+.full-row { grid-column: 1 / -1; }
+
+.form-group           { display: flex; flex-direction: column; }
+.form-group label     { font-weight: bold; margin-bottom: 5px; }
+.form-group input[type=text],
+.form-group input[type=email],
+.form-group input[type=tel],
+.form-group input[type=password],
+.form-group input[type=number],
+.form-group select {
+    padding: 6px 8px;
+    border: 1px solid #767676;
+    border-radius: 6px;
+    font-size: .95rem;
+}
+
+/* Inline radio options */
+.inline-options {
+    display: flex; gap: 15px; align-items: center; justify-content: flex-start;
+}
+.choice {
+    display: flex; align-items: center; gap: 6px;
+    font-size: .95rem; font-weight: 500;
+}
+.choice input[type="radio"] { transform: scale(1.2); margin-top: 0; }
+
+/* Helper text and read-only values (profile pages) */
+.helper { margin-top: 4px; font-size: .9rem; color: #444; }
+.form-control-static { padding: 6px 0; font-size: .9rem; min-height: 1.5em; }
+.seal-plain-fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.seal-plain-fieldset input[type=password] { display: block; width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+.seal-profile .form-group input { width: 100%; box-sizing: border-box; }
+
+/* Pill */
+.pill {
+    background: #f1f5f9; border-radius: 12px;
+    padding: 4px 10px; font-size: .9rem;
+    display: inline-block; margin-top: 3px;
+}
+
+/* Actions row */
+.actions { margin-top: 25px; text-align: center; }
+
+/* Status / error messages */
+.status-message {
+    background: #eaf6ea; border: 1px solid #a5d6a7;
+    color: #2e7d32; border-radius: 6px; padding: 10px 15px; margin-bottom: 20px;
+}
+.status-error {
+    background: #fdecea; border: 1px solid #f5c6cb; color: #a71d2a;
+}
+
+/* ── illuser profile: form-table override ────────────────────── */
+/* Make the WP form-table match the theme style */
+.seal-page-wrap .form-table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 680px;
+}
+.seal-page-wrap .form-table th {
+    width: 200px;
+    padding: 8px 12px 8px 0;
+    color: var(--seal-brand-dark, #1d1f40);
+    font-weight: 600;
+    vertical-align: middle;
+    text-align: left;
+}
+.seal-page-wrap .form-table td {
+    padding: 6px 0 6px 12px;
+    vertical-align: middle;
+}
+.seal-page-wrap .form-table input[type=text],
+.seal-page-wrap .form-table input[type=email],
+.seal-page-wrap .form-table input[type=password],
+.seal-page-wrap .form-table select {
+    width: 100%;
+    max-width: 340px;
+    padding: 6px 8px;
+    border: 1px solid #767676;
+    border-radius: 6px;
+    font-size: .95rem;
+}
+.seal-page-wrap .form-table p.description {
+    font-size: .85rem; color: #666; margin-top: 4px;
+}
+.seal-page-wrap h4 {
+    margin: 24px 0 8px;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #E0E6ED;
+    padding-bottom: 4px;
+    color: var(--seal-brand-dark, #1d1f40);
+}
+/* Save button */
+.seal-page-wrap .button.button-primary,
+.seal-page-wrap button[type="submit"].button-primary {
+    background: var(--seal-brand, #4a4180); border-color: var(--seal-brand-dark, #1d1f40);
+    color: #fff; padding: 8px 20px; font-size: 1rem;
+    border-radius: 6px; cursor: pointer;
+}
+.seal-page-wrap .button.button-primary:hover { background: var(--seal-brand-dark, #1d1f40); }
+
+
+/* Read-only Library Information table on User Profile */
+.seal-page-wrap .seal-readonly-table th {
+    color: var(--seal-brand-dark, #1d1f40);
+    font-weight: 600;
+}
+.seal-page-wrap .seal-readonly-table td {
+    padding: 6px 0 6px 12px;
+    color: #333;
+}
+.seal-page-wrap .seal-readonly-table em { color: #595959; }
+
+/* ════════════════════════════════════════════════════════════
+   7. ADMIN LIBRARY MANAGEMENT
+   ════════════════════════════════════════════════════════════ */
+
+.adminlib-wrapper {
+    max-width: 1250px; margin: 0 auto; padding: 20px;
+}
+.adminlib-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 15px;
+}
+.adminlib-header h3 {
+    margin: 0; font-size: 1.4rem; color: var(--seal-brand-dark, #1d1f40); font-weight: 600;
+}
+.adminlib-header .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.adminlib-panel {
+    background: #fff; border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 20px 25px; margin-bottom: 25px;
+}
+.adminlib-panel h4 {
+    font-size: 1.2rem; margin-top: 0;
+    border-bottom: 2px solid #E0E6ED;
+    padding-bottom: 5px; margin-bottom: 20px;
+}
+.adminlib-panel input[type=text],
+.adminlib-panel select { width: 100%; }
+.adminlib-panel table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.adminlib-panel table td { padding: 5px; vertical-align: top; }
+
+.section-divider { border-top: 2px solid #E0E6ED; margin: 25px 0; }
+.pagination-info { text-align: right; font-size: .9rem; color: #555; margin-bottom: 10px; }
+
+/* Table action links */
+td.table-actions { white-space: nowrap; vertical-align: middle; }
+.table-actions a { display: inline-block; margin: 2px 6px 2px 0; text-decoration: none; padding: 4px 10px; border-radius: 5px; font-size: .85rem; line-height: 1.4; }
+.table-actions a.edit   { background: var(--seal-brand, #4a4180); color: #fff; }
+.table-actions a.edit:hover  { background: var(--seal-brand-dark, #1d1f40); }
+.table-actions a.delete { background: #b82e2e; color: #fff; }
+.table-actions a.delete:hover { background: #922121; }
+
+/* Option table (radio sections) */
+.option-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.option-table td { border: none; padding: 10px 8px; vertical-align: middle; }
+.option-table b  { display: inline-block; font-size: .95rem; color: #222; }
+
+@media (max-width: 768px) {
+    .adminlib-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    td.table-actions { white-space: normal; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   8. FILTER BAR
+   ════════════════════════════════════════════════════════════ */
+
+.filter-bar, .seal-filter-bar {
+    background: #f9fafc;
+    border: 1px solid #d4dae0;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.filter-bar h4 { margin-top:0; margin-bottom:10px; color:var(--seal-brand-dark, #1d1f40); font-weight:600; }
+
+.filter-grid, .seal-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px 18px;
+}
+.filter-grid .form-group,
+.seal-form-grid > div { display: flex; flex-direction: column; }
+.filter-grid label,
+.seal-form-grid label  { font-size: .9rem; font-weight: 600; color: #333; margin-bottom: 4px; }
+.filter-grid input[type=text],
+.filter-grid select,
+.seal-form-grid input[type=text],
+.seal-form-grid select {
+    padding: 6px 8px; border: 1px solid #767676;
+    border-radius: 6px; font-size: .9rem;
+}
+.filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+}
+.filter-actions .btn-primary,
+.filter-actions .btn-secondary {
+    margin: 0;
+    width: auto;
+}
+
+/* Prev / Next pagination below admin tables */
+.seal-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 14px;
+}
+.seal-pagination form { margin: 0; }
+.seal-pagination .btn-primary,
+.seal-pagination .btn-secondary { margin: 0; width: auto; }
+.seal-pagination .is-disabled {
+    opacity: .45;
+    pointer-events: none;
+    cursor: default;
+}
+.seal-page-indicator { font-size: .9rem; color: #555; }
+
+@media (max-width: 768px) {
+    .filter-grid, .seal-form-grid { grid-template-columns: 1fr; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   9. REQUEST HISTORY SUBROWS
+   ════════════════════════════════════════════════════════════ */
+
+.rh-subrow td    { padding: 0; border-top: 0; }
+.rh-subwrap      { padding: 10px 12px; background: #f8f9fa; border-left: 4px solid #dee2e6; }
+.rh-subtitle     { margin-bottom: 8px; }
+.rh-muted        { color: #595959; font-weight: normal; }
+.rh-notes-grid   {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+}
+.rh-note-item    { background: #fff; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; }
+.rh-note-label   { font-weight: 700; margin-bottom: 6px; }
+.rh-note-text    { white-space: normal; }
+
+/* Theme form-field variables (Neve): consistent, WCAG 1.4.11-contrast controls on every plugin page. */
+body.seal-route {
+    --formfieldborderwidth: 1px;
+    --formfieldbordercolor: #767676;
+    --formfieldborderradius: 6px;
+    --formfieldpadding: 7px 10px;
+}
+
+/* ════════════════════════════════════════════════════════════
+   10. DATEPICKER OVERRIDES
+   ════════════════════════════════════════════════════════════ */
+
+body input#datepicker,
+body input#datepicker2,
+body input#datepicker_adminlib,
+body input#datepicker_lp,
+body input[name="startdate"],
+body input[name="enddate"],
+body input[name="duedate"],
+body input[name="needbydate"] {
+    box-sizing: border-box;
+    display: inline-block;
+    vertical-align: middle;
+    height: 40px;
+    margin: 4px 10px 4px 4px;
+    border: 1px solid #767676;
+    border-radius: 6px;
+    padding: 6px 8px;
+    width: 180px;
+    font-size: .9rem;
+    line-height: 1.4;
+}
+body input#datepicker:focus,
+body input#datepicker2:focus,
+body input#datepicker_adminlib:focus,
+body input#datepicker_lp:focus {
+    border-color: var(--seal-brand, #4a4180);
+    outline: 2px solid var(--seal-brand, #4a4180);
+    outline-offset: 1px;
+}
+
+/* Hide default jQuery UI icons; replace with text arrows */
+.ui-datepicker .ui-datepicker-prev span,
+.ui-datepicker .ui-datepicker-next span { display: none; }
+
+.ui-datepicker .ui-datepicker-prev::before { content: "◀"; font-size: 14px; color: #333; }
+.ui-datepicker .ui-datepicker-next::before { content: "▶"; font-size: 14px; color: #333; }
+
+.ui-datepicker .ui-datepicker-prev,
+.ui-datepicker .ui-datepicker-next {
+    cursor: pointer; top: 2px;
+    width: 1.8em; height: 1.8em;
+}
+
+/* ════════════════════════════════════════════════════════════
+   11. SEARCH HEADER (catalog search module)
+   ════════════════════════════════════════════════════════════ */
+
+.seal-search-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 20px;
+    padding: 10px 0;
+}
+.seal-search-left  { flex: 0 0 auto; }
+.seal-search-center{ flex: 1; text-align: center; line-height: 1.25; }
+.seal-search-right { flex: 0 0 auto; text-align: right; }
+.seal-search-left img { max-height: 80px; width: auto; }
+.seal-search-title { margin: 0 0 8px; font-size: 1.25rem; }
+
+.seal-query-row    { margin: 0 0 8px; }
+.seal-controls-row {
+    margin: 0 0 6px;
+    display: inline-flex; align-items: center;
+    justify-content: center; gap: 10px;
+}
+.seal-links-row  { margin: 0; }
+.seal-input {
+    width: 50%; min-width: 340px; max-width: 640px;
+    padding: 8px 10px; border: 1px solid #767676;
+    border-radius: 4px; font-size: 16px;
+}
+.seal-inline-label { margin: 0; font-weight: 400; white-space: nowrap; }
+.seal-select {
+    width: 200px; max-width: 100%;
+    padding: 8px 10px; border: 1px solid #767676;
+    border-radius: 4px; font-size: 16px; min-height: 40px;
+}
+.seal-btn,
+.seal-search-center input[type="submit"] {
+    display: inline-block; background: var(--seal-brand, #4a4180); color: #fff;
+    padding: 8px 14px; text-decoration: none; border: none;
+    border-radius: 4px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+}
+.seal-btn:hover,
+.seal-btn:focus,
+.seal-search-center input[type="submit"]:hover { background: var(--seal-brand-dark, #1d1f40); color: #fff; }
+.seal-link { text-decoration: underline; }
+.seal-or   { margin-right: 8px; }
+.seal-sep  { margin: 0 8px; }
+
+@media (max-width: 768px) {
+    .seal-search-header { flex-wrap: wrap; }
+    .seal-input  { width: 100%; min-width: 0; max-width: 100%; }
+    .seal-controls-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .seal-select { width: 100%; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   12. TWO-COLUMN LAYOUT (sidebar nav + content)
+   Reproduces the original SEAL page layout. The plugin renders
+   this so any deployment gets it without manual page setup.
+   ════════════════════════════════════════════════════════════ */
+
+.seal-layout {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+.seal-layout-sidebar {
+    flex: 0 0 200px;
+    max-width: 200px;
+}
+.seal-layout-main {
+    flex: 1 1 auto;
+    min-width: 0;            /* allow tables to scroll instead of overflowing */
+    padding-left: 10px;      /* breathing room between sidebar and content */
+}
+
+/* Page containers: full-width inside the main column, left-aligned (not
+   centered) so they line up consistently against the sidebar gutter rather
+   than collapsing toward the middle on wide screens. */
+.seal-layout-main .LibProfile_Form,
+.seal-layout-main .adminlib-wrapper,
+.seal-layout-main .seal-page-wrap {
+    max-width: 100%;
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+/* Consistent space above the first heading on every admin page so the title
+   isn't jammed against the top of the content column. */
+.seal-layout-main .LibProfile_Form > h3:first-child,
+.seal-layout-main .adminlib-wrapper > .adminlib-header:first-child,
+.seal-layout-main .seal-page-wrap > h3:first-child {
+    margin-top: 6px;
+}
+
+/* Sidebar nav: clear headings, block links, and a highlighted current page. */
+.seal-sidebar-nav h6 {
+    margin: 18px 0 6px;
+    padding: 12px 10px 0;
+    border-top: 1px solid #d8dde3;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #4a5b6d;
+}
+.seal-sidebar-nav a {
+    display: block;
+    padding: 5px 10px;
+    margin: 1px 0;
+    border-left: 3px solid transparent;
+    border-radius: 0 4px 4px 0;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--seal-brand, #4a4180);
+}
+.seal-sidebar-nav a:hover { background: #f1f5f9; color: var(--seal-brand-dark, #1d1f40); text-decoration: underline; }
+.seal-sidebar-nav a.seal-current {
+    background: #ebe9f5;
+    background: color-mix(in srgb, var(--seal-brand, #4a4180) 12%, #fff);
+    border-left-color: var(--seal-brand, #4a4180);
+    font-weight: 600;
+    color: var(--seal-brand-dark, #1d1f40);
+}
+.seal-sidebar-nav br { display: none; }
+.seal-sidebar-nav hr {
+    margin: 10px 0;
+    border: 0;
+    border-top: 1px solid #d8dde3;
+}
+.seal-sidebar-nav .seal-sidebar-top {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.seal-sidebar-nav .seal-sidebar-top li { margin: 0; }
+.seal-sidebar-nav p { margin: 0; }
+
+/* Stack on small screens — sidebar moves above content */
+@media (max-width: 782px) {
+    .seal-layout { flex-direction: column; }
+    .seal-layout-sidebar {
+        flex-basis: auto;
+        max-width: 100%;
+        width: 100%;
+        border-bottom: 2px solid #E0E6ED;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+}
+
+/* ── Respond / ILL bib display ── */
+.seal-respond { max-width: 780px; }
+.seal-respond h3 { margin-bottom: 12px; }
+
+.seal-bib-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+    background: #f9fafc;
+    border: 1px solid #d4dae0;
+    border-radius: 6px;
+    overflow: hidden;
+}
+.seal-bib-table th,
+.seal-bib-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e4e8ed;
+    font-size: .92rem;
+    text-align: left;
+    vertical-align: top;
+}
+.seal-bib-table th {
+    width: 120px;
+    font-weight: 700;
+    color: var(--seal-brand-dark, #1d1f40);
+    background: #eef2f7;
+}
+.seal-bib-table tr:last-child th,
+.seal-bib-table tr:last-child td { border-bottom: 0; }
+
+/* ── allrequests-ls / stats filter bars ── */
+.seal-form-grid label { display: block; font-size: .9rem; font-weight: 600; color: #333; margin-bottom: 3px; }
+.seal-form-grid input[type=text],
+.seal-form-grid select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #767676;
+    border-radius: 6px;
+    font-size: .9rem;
+}
+
+/* ── Ensure status-badge colours work inside rh-table ── */
+.rh-table td .status-badge { margin-top: 0; }
+/* In a narrow table column the badge wraps instead of spilling past the cell ("Reminder Sent" on All Requests). */
+:is(.rh-table, .seal-table) td .status-badge { white-space: normal; max-width: 100%; box-sizing: border-box; overflow-wrap: break-word; line-height: 1.25; }
+.rh-table td.status-cell .seal-resend-link { margin-top: 6px; }
+
+/* ── Request History "Limit Results" filter card ── */
+.seal-limit-form .section-card h4 {
+    margin-top: 0;
+    font-size: 1.6rem;
+    border-bottom: 0;
+    color: #1a1a1a;
+}
+.seal-status-fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0 0 16px;
+}
+.seal-status-fieldset legend {
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+    padding: 0;
+}
+/* Checkbox grid: 4 across on wide screens, collapsing gracefully */
+.seal-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 10px 18px;
+}
+.seal-checkbox-grid .choice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .95rem;
+    font-weight: 500;
+}
+.seal-checkbox-grid .choice input[type="checkbox"] {
+    transform: scale(1.15);
+    margin: 0;
+}
+@media (max-width: 900px) {
+    .seal-checkbox-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+    .seal-checkbox-grid { grid-template-columns: 1fr; }
+}
+
+/* Time Frame + ILL # row */
+.seal-limit-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px 25px;
+    align-items: flex-end;
+    margin-bottom: 18px;
+}
+.seal-limit-controls .form-group { margin: 0; }
+.seal-limit-controls label {
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: block;
+}
+.seal-limit-controls select,
+.seal-limit-controls input[type=text] {
+    padding: 8px 10px;
+    border: 1px solid #767676;
+    border-radius: 6px;
+    font-size: .95rem;
+    min-width: 150px;
+}
+
+/* Reset OR Update action row */
+.seal-limit-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.seal-limit-actions .seal-or {
+    font-weight: 700;
+    color: #333;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   12. BRAND LINKS
+   Purple links on white are 8.9:1 (WCAG AA needs 4.5:1). Links inside page
+   content stay underlined so they are not identified by colour alone (1.4.1).
+   Button-styled links keep their own colours (they are excluded here).
+   ════════════════════════════════════════════════════════════ */
+:is(.seal-page-wrap, .LibProfile_Form, .seal-alert) a:not(.seal-btn-primary):not(.seal-btn-secondary):not(.seal-btn-danger):not(.btn-primary):not(.btn-secondary):not(.btn-danger):not(.loan-btn):not(.edit):not(.delete):not(.export-btn):not(.clear-btn):not(.seal-btn):not(.button) {
+    color: var(--seal-brand, #4a4180);
+    text-decoration: underline;
+}
+:is(.seal-page-wrap, .LibProfile_Form, .seal-alert) a:not(.seal-btn-primary):not(.seal-btn-secondary):not(.seal-btn-danger):not(.btn-primary):not(.btn-secondary):not(.btn-danger):not(.loan-btn):not(.edit):not(.delete):not(.export-btn):not(.clear-btn):not(.seal-btn):not(.button):hover { color: var(--seal-brand-dark, #1d1f40); }
+
+/* ════════════════════════════════════════════════════════════
+   13. TWO-FACTOR PANEL (profile page): compact, collapsed by default
+   ════════════════════════════════════════════════════════════ */
+.seal-2fa-panel { padding: 14px 20px; }
+.seal-2fa-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.seal-2fa-panel .seal-2fa-head h4 { margin: 0; padding: 0; border: 0; font-size: 1.1rem; }
+.seal-2fa-status {
+    display: inline-block; margin-left: 8px; padding: 2px 9px; border-radius: 10px;
+    font-size: .75rem; font-weight: 700; vertical-align: middle; letter-spacing: .02em;
+}
+.seal-2fa-status.is-on  { background: #d4edda; color: #155724; }
+.seal-2fa-status.is-off { background: #e9ecef; color: #343a40; }
+.seal-2fa-body { margin-top: 12px; padding-top: 12px; border-top: 2px solid #E0E6ED; }
+.seal-2fa-body[hidden] { display: none; }
+.seal-2fa-panel p { margin: 0 0 10px; }
+.seal-2fa-setup { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+.seal-2fa-qr img { display: block; width: 150px; height: 150px; border: 1px solid #ddd; padding: 4px; background: #fff; }
+.seal-2fa-steps { flex: 1 1 260px; min-width: 0; font-size: .92rem; }
+.seal-2fa-key { display: inline-block; margin-top: 4px; padding: 3px 8px; background: #eef0f8; font-size: .95rem; letter-spacing: .06em; word-break: break-all; }
+.seal-2fa-form label { display: block; margin-bottom: 6px; font-weight: 600; }
+.seal-2fa-panel input.seal-2fa-code { width: 10em; max-width: 100%; box-sizing: border-box; }
+.seal-2fa-inline, .seal-2fa-buttons { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.seal-2fa-buttons { margin-top: 10px; }
+.seal-2fa-codes { font-family: monospace; font-size: 1.05em; columns: 2; max-width: 320px; margin: 8px 0 0; }
+
+/* On/off switch (a real checkbox with role="switch"; keyboard and screen-reader friendly) */
+.seal-switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: .9rem; font-weight: 600; }
+.seal-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seal-switch-track {
+    position: relative; width: 44px; height: 24px; border-radius: 12px;
+    background: #6c757d; transition: background .15s;
+}
+.seal-switch-track::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; transition: transform .15s;
+}
+.seal-switch input:checked + .seal-switch-track { background: var(--seal-brand, #4a4180); }
+.seal-switch input:checked + .seal-switch-track::after { transform: translateX(20px); }
+.seal-switch input:focus-visible + .seal-switch-track { outline: 3px solid var(--seal-brand, #4a4180); outline-offset: 2px; }
+
+
+/* ════════════════════════════════════════════════════════════
+   14. ROW ACTION BUTTONS (request / lender history)
+   ════════════════════════════════════════════════════════════ */
+.seal-row-actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; min-width: 110px; }
+.seal-row-actions + .seal-row-actions { margin-top: 10px; }
+.seal-row-note { font-size: .8rem; font-style: italic; color: #50575e; line-height: 1.3; }
+/* "Edit Fill Status": a disclosure that reveals the opposite answer */
+.seal-row-toggle { display: flex; flex-direction: column; gap: 10px; }
+.seal-row-toggle > summary { list-style: none; cursor: pointer; }
+.seal-row-toggle > summary::-webkit-details-marker { display: none; }
+.seal-row-toggle > summary::after { content: " ▾"; }
+.seal-row-toggle[open] > summary::after { content: " ▴"; }
+.seal-row-toggle > summary:focus-visible { outline: 3px solid #2271b1; outline-offset: 2px; }
+.seal-row-btn {
+    width: 100%; box-sizing: border-box; margin: 0;
+    font-size: .85em; line-height: 1.3; text-align: center; white-space: normal;
+}
+.seal-row-form { display: none; }
+
+/* Request page: libraries shown greyed-out with the reason they cannot be chosen */
+.seal-grayout { margin: 4px 0; padding: 4px 0; color: #595959; }
+
+/* ════════════════════════════════════════════════════════════
+   15. REQUEST PAGE
+   Cards for each step, label/value facts, pill choices and
+   selectable library rows. Text is #1d2327 / #50575e on white
+   (16:1 / 7.4:1); availability pills are 7:1 or better.
+   ════════════════════════════════════════════════════════════ */
+.seal-req { max-width: 980px; }
+.seal-req-intro { font-size: 1rem; margin: 0 0 18px; }
+.seal-req .section-card { border: 1px solid #e2e4e7; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 20px 24px; margin-bottom: 20px; }
+.seal-req .section-card h4 { font-size: 1.15rem; color: var(--seal-brand-dark, #1d1f40); }
+
+.seal-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px 28px; margin: 0; }
+.seal-facts > div { margin: 0; min-width: 0; }
+.seal-facts dt { margin: 0 0 2px; font-size: .78rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #50575e; }
+.seal-facts dd { margin: 0; font-size: 1rem; font-weight: 600; color: #1d2327; overflow-wrap: anywhere; }
+.seal-fact-wide { grid-column: 1 / -1; }
+
+.seal-req-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.seal-req-wide { grid-column: 1 / -1; }
+.seal-req .form-group input[type=text],
+.seal-req .form-group select { width: 100%; box-sizing: border-box; }
+body .seal-req .form-group input[name="needbydate"] { width: 100%; height: auto; margin: 0; }
+.seal-req .form-group label { font-weight: 600; }
+.seal-optional { font-weight: 400; color: #50575e; }
+.seal-req-profile { max-width: 420px; margin-bottom: 16px; }
+
+.seal-req fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.seal-req legend { padding: 0; margin: 0 0 8px; font-weight: 700; color: #1d2327; }
+.seal-req-article { border-top: 1px solid #e0e6ed; padding-top: 16px; }
+.seal-req-articlefields { margin-top: 16px; }
+.seal-req-copies .helper { margin: 10px 0 0; }
+
+.seal-choices { display: flex; flex-wrap: wrap; gap: 10px; }
+.seal-choice {
+    display: inline-flex; align-items: center; gap: 8px; margin: 0;
+    padding: 8px 18px; border: 1px solid #767676; border-radius: 999px;
+    background: #fff; font-weight: 600; line-height: 1.2; cursor: pointer;
+}
+.seal-choice input { margin: 0; }
+.seal-choice:hover { background: #f5f4fa; }
+.seal-choice:has(input:checked) { background: #ebe9f5; border-color: var(--seal-brand, #4a4180); box-shadow: 0 0 0 1px var(--seal-brand, #4a4180); }
+
+.seal-lib-list { margin-top: 18px; }
+.seal-lib-option {
+    display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px;
+    margin: 0 0 10px; padding: 12px 16px; cursor: pointer;
+    border: 1px solid #8c8f94; border-radius: 8px; background: #fff; font-weight: 400;
+}
+.seal-lib-option input { flex: 0 0 auto; margin: 4px 0 0; }
+.seal-lib-main { flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.seal-lib-name { font-size: 1.02rem; color: #1d2327; }
+.seal-lib-system { font-size: .88rem; color: #50575e; }
+.seal-lib-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: .88rem; }
+.seal-lib-call { color: #3c434a; }
+.seal-lib-call-label { color: #50575e; }
+.seal-lib-option:hover { border-color: var(--seal-brand, #4a4180); background: #faf9fd; }
+.seal-lib-option:has(input:checked) { border-color: var(--seal-brand, #4a4180); background: #ebe9f5; box-shadow: 0 0 0 1px var(--seal-brand, #4a4180); }
+.seal-choice:focus-within, .seal-lib-option:focus-within { outline: 3px solid var(--seal-brand, #4a4180); outline-offset: 2px; }
+
+.seal-avail { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+.seal-avail-yes     { background: #e3f4e8; color: #0a5c2e; }
+.seal-avail-no      { background: #fbe9e9; color: #8a1f1f; }
+.seal-avail-unknown { background: #fff3cd; color: #664d03; }
+
+.seal-lib-unavail { margin-top: 18px; padding: 12px 16px; border: 1px dashed #8c8f94; border-radius: 8px; background: #f8f9fa; }
+.seal-lib-unavail-title { margin: 0 0 6px; font-weight: 700; color: #3c434a; }
+.seal-lib-unavail ul { margin: 0; padding-left: 20px; list-style: disc; }
+.seal-lib-unavail .seal-grayout { margin: 2px 0; padding: 0; color: #50575e; }
+
+.seal-req-submit { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 22px; padding-top: 16px; border-top: 2px solid #E0E6ED; }
+.seal-req-submit-btn { padding: 11px 28px; font-size: 1rem; }
+
+@media (max-width: 700px) {
+    .seal-req-grid { grid-template-columns: 1fr; }
+    .seal-lib-meta { align-items: flex-start; }
+}
+
+/* ════════════════════════════════════════════════════════════
+   16. SYSTEM STATISTICS (/systemstats)
+   Text #1d2327 / #50575e on white; ok #0a5c2e and bad #8a1f1f
+   on white are both above 7:1.
+   ════════════════════════════════════════════════════════════ */
+.seal-ss .seal-ss-card { background: #fff; border: 1px solid #e2e4e7; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,.08); padding: 16px 22px; margin: 0 0 18px; max-width: 760px; }
+.seal-ss .seal-ss-card h3 { margin: 0 0 10px; padding-bottom: 6px; border-bottom: 1px solid #e2e4e7; font-size: 1.15rem; color: var(--seal-brand-dark, #1d1f40); }
+.seal-ss .seal-ss-card h4 { margin: 10px 0 2px; font-size: .95rem; color: #50575e; }
+.seal-ss-list { display: grid; grid-template-columns: minmax(180px, 1fr) auto; gap: 6px 24px; margin: 0; }
+.seal-ss-list dt { font-weight: 600; color: #1d2327; }
+.seal-ss-list dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; color: #1d2327; }
+.seal-ss-pct { color: #50575e; }
+.seal-ss-sub { margin: 14px 0 6px; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #50575e; }
+.seal-ss-nested dt { font-weight: 400; padding-left: 14px; }
+.seal-ss-warn { color: #8a1f1f !important; font-weight: 700; }
+.seal-ss-note { margin: 10px 0 0; font-size: .85rem; color: #50575e; }
+.seal-ss-ok, .seal-ss-bad { margin: 0 0 6px; }
+.seal-ss-ok { color: #0a5c2e; }
+.seal-ss-bad { color: #8a1f1f; }
+@media (max-width: 520px) { .seal-ss-list { grid-template-columns: 1fr auto; gap: 6px 12px; } }
+
+/* System statistics (library-system staff): report cards with their own date range */
+.seal-ss .seal-ss-wide { max-width: 980px; }
+.seal-ss .seal-ss-help { margin: 0 0 10px; color: #50575e; }
+.seal-ss .seal-ss-form { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; margin: 0 0 4px; }
+.seal-ss .seal-ss-form .form-group { margin: 0; }
+.seal-ss .seal-ss-form label { display: block; font-weight: 600; margin: 0 0 3px; }
+.seal-ss .seal-ss-form input[type="text"] { width: 150px; }
+.seal-ss .seal-ss-result { margin-top: 14px; padding-top: 12px; border-top: 1px solid #e2e4e7; }
+.seal-ss .seal-ss-result h4 { margin: 0 0 8px; font-size: 1rem; color: #1d2327; }
+.seal-ss .seal-ss-table { max-width: 100%; }
+.seal-ss .seal-ss-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.seal-ss .seal-ss-table tr.seal-ss-total th, .seal-ss .seal-ss-table tr.seal-ss-total td { font-weight: 700; border-top: 2px solid #c3c4c7; background: #f6f7f7; text-align: left; }
+.seal-ss .seal-ss-table tr.seal-ss-total td.num { text-align: right; }
+
+/* Yes/No status text in library lists (7:1 or better on white) */
+.status-yes { color: #166534; font-weight: 600; }
+.status-no  { color: #b91c1c; font-weight: 600; }
+
+/* Admin statistics: group rows and indented item types */
+.seal-ss .seal-ss-table tr.seal-ss-group th, .seal-ss .seal-ss-table tr.seal-ss-group td { background: #f0f0f6; font-weight: 700; text-align: left; }
+.seal-ss .seal-ss-table tr.seal-ss-group td.num { text-align: right; }
+.seal-ss .seal-ss-table td.seal-ss-indent { padding-left: 24px; }
+
+/* Statistics tables: row headers (<th scope="row">) must not inherit the purple/white column-header
+   style, and the theme's zebra striping must not lower contrast. Dark text (#1d2327) on white,
+   #f6f7f7 or #ebebf5 is 13:1 or better; header row keeps white on brand purple. */
+.seal-ss .seal-ss-table tbody th,
+.seal-ss .seal-ss-table tbody td {
+    color: #1d2327 !important;
+    background-color: #ffffff !important;
+    text-transform: none;
+    font-weight: 400;
+    border: 1px solid #c3c4c7;
+    text-align: left;
+}
+.seal-ss .seal-ss-table tbody td.num { text-align: right; }
+.seal-ss .seal-ss-table tbody tr.seal-ss-total th,
+.seal-ss .seal-ss-table tbody tr.seal-ss-total td { background-color: #f6f7f7 !important; font-weight: 700; border-top: 2px solid #8c8f94; }
+.seal-ss .seal-ss-table tbody tr.seal-ss-group th,
+.seal-ss .seal-ss-table tbody tr.seal-ss-group td { background-color: #ebebf5 !important; font-weight: 700; }
+.seal-ss .seal-ss-table tbody .seal-ss-pct { color: #50575e !important; font-weight: 400; }
+.seal-ss .seal-ss-table thead th { border-color: var(--seal-brand, #4a4180); }
+
+/* Library-profile switchers now use an explicit button instead of changing the page on selection. */
+.seal-req-hint, .helper { color: #50575e; font-size: .85rem; }
+.seal-req-profile { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 12px; }
+.seal-req-profile .seal-req-hint { flex-basis: 100%; margin: 0; }
+
+/* Reflow (WCAG 1.4.10): no control may be wider than its container at 320 px. */
+.seal-route input:not([type=checkbox]):not([type=radio]),
+.seal-route select,
+.seal-route textarea { max-width: 100%; box-sizing: border-box; }
+
+/* Request page: automatic-fallback ("rota") opt-in checkbox under the single-copy library list */
+.seal-rota-opt { margin-top: 14px; }
+.seal-choice-plain { display: flex; align-items: flex-start; gap: 8px; font-weight: 400; cursor: pointer; }
+.seal-choice-plain input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+
+/* Per-library "use as a backup" checkbox: shown only once automatic fallback is ticked */
+.seal-rota-opt { margin: 0 0 14px; padding: 10px 12px; border: 1px solid #c3c4c7; border-radius: 6px; background: #f6f7f7; }
+.seal-rota-pick { display: flex; align-items: flex-start; gap: 6px; margin: -2px 0 12px 16px; padding: 6px 10px; border-left: 3px solid var(--seal-brand, #4a4180); background: #f6f5fb; font-size: .9rem; font-weight: 400; color: #1d2327; cursor: pointer; }
+.seal-rota-pick[hidden] { display: none; }
+.seal-rota-pick input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+.seal-rota-pick input:disabled + span { color: #595959; }
+.seal-rota-help { margin: 6px 0 0 28px; font-size: .875rem; }
+.seal-rota-count { margin: 6px 0 0 28px; font-size: .875rem; font-weight: 600; color: #1d2327; }
+.seal-rota-count[hidden] { display: none; }
+
+/* Request confirmation ("Your Request Has Been Sent") */
+.seal-sent-title { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--seal-accent, #3fbb86); font-size: 1.6rem; color: #1d2327; }
+.seal-sent p { margin: 0 0 10px; }
+.seal-sent h3 { margin: 18px 0 6px; font-size: 1.05rem; }
+.seal-sent-details { list-style: none; margin: 0 0 14px; padding: 0; }
+.seal-sent-details li { margin: 2px 0; }
+
+/* Borrowing / Lending history: 8 columns sized to fit beside the sidebar (~800px), so the
+   Date / Status and Action columns stay in view; long email addresses wrap inside their cell. */
+.seal-table.history-table { table-layout: fixed; width: 100%; min-width: 760px; }
+.seal-table.history-table th, .seal-table.history-table td { padding: 6px 7px; font-size: .85rem; }
+.seal-table.history-table th:nth-child(1), .seal-table.history-table td:nth-child(1) { width: 30px; }   /* select */
+.seal-table.history-table th:nth-child(2), .seal-table.history-table td:nth-child(2) { width: 80px; }   /* ILL # */
+.seal-table.history-table th:nth-child(4), .seal-table.history-table td:nth-child(4) { width: 72px; }   /* Type / Need By */
+.seal-table.history-table th:nth-child(6), .seal-table.history-table td:nth-child(6) { width: 78px; }   /* Due Date / Ship */
+.seal-table.history-table th:nth-child(7), .seal-table.history-table td:nth-child(7) { width: 90px; }   /* Date / Status */
+.seal-table.history-table th:nth-child(8), .seal-table.history-table td:nth-child(8) { width: 112px; }  /* Action */
+/* Title / Author and Lender / Borrower share whatever width is left. */
+.seal-table.history-table td[colspan] { width: auto; }
+.seal-table.history-table .seal-row-actions { min-width: 0; }
+.seal-table.history-table .seal-row-btn { white-space: normal; }
+.seal-table a.seal-email, .seal-table a[href^="mailto:"] { overflow-wrap: anywhere; word-break: break-word; }
+
+/* Native date fields (SEAL_Page_Base::datepicker_js): room for the date and the calendar button */
+input.seal-date { min-width: 10.5em; width: auto !important; }
+
+/* Statistics breakdowns (SEAL_Page_Base::stats_breakdown): compact nested lists like SEAL-3's indented text.
+   !important and item-level list-style because the theme gives every <li> a large margin and its own bullet. */
+ul.seal-stats-breakdown,
+ul.seal-stats-breakdown ul { margin: 0 !important; padding: 0 !important; }
+ul.seal-stats-breakdown li { margin: 0 !important; padding: 0 !important; line-height: 1.45 !important; }
+ul.seal-stats-breakdown > li { list-style: none !important; margin: 0 0 10px !important; }
+ul.seal-stats-breakdown > li > ul { margin: 2px 0 0 22px !important; }
+ul.seal-stats-breakdown > li > ul > li { list-style: disc outside !important; margin: 0 0 4px !important; }
+ul.seal-stats-breakdown ul.seal-stats-outcomes { margin: 1px 0 0 16px !important; }
+ul.seal-stats-breakdown ul.seal-stats-outcomes > li { list-style: none !important; margin: 0 !important; }
+ul.seal-stats-breakdown ul.seal-stats-outcomes > li::before { content: "\2013\00a0"; }   /* en dash, like SEAL-3 */
+
+/* Two-factor panel: one card per method, actions and confirmations open in place (<details>) */
+.seal-2fa-panel .seal-2fa-card { border: 1px solid #dcdcde; border-radius: 6px; padding: 14px 16px; margin: 14px 0 0; background: #fff; }
+.seal-2fa-panel .seal-2fa-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.seal-2fa-panel .seal-2fa-card-head h5 { margin: 0; font-size: 1rem; }
+.seal-2fa-panel .seal-2fa-danger { border-color: #e2b4ae; background: #fdf6f5; }
+.seal-2fa-panel .seal-2fa-meta { color: #50575e; font-size: .85rem; }
+.seal-2fa-panel ul.seal-2fa-keys { list-style: none !important; margin: 8px 0 12px !important; padding: 0 !important; border-top: 1px solid #eee; }
+/* Neve gives every <li> its own bullet and margin, so the key rows need !important */
+.seal-2fa-panel ul.seal-2fa-keys > li.seal-2fa-key-row { list-style: none !important; margin: 0 !important; }
+.seal-2fa-panel ul.seal-2fa-keys > li.seal-2fa-key-row::before, .seal-2fa-panel ul.seal-2fa-keys > li.seal-2fa-key-row::marker { content: none !important; }
+.seal-2fa-panel .seal-2fa-key-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee; }
+.seal-2fa-panel .seal-2fa-key-info { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.seal-2fa-panel .seal-2fa-key-info .seal-2fa-meta { flex-basis: 100%; }
+.seal-2fa-panel .seal-2fa-type { font-size: .78rem; padding: 1px 8px; border-radius: 10px; background: #eef0f8; color: #2c3338; }
+.seal-2fa-panel details > summary { list-style: none; display: inline-block; }
+.seal-2fa-panel details > summary::-webkit-details-marker { display: none; }
+.seal-2fa-panel details[open] > summary { margin-bottom: 8px; }
+.seal-2fa-panel .seal-2fa-key-row details { text-align: right; }
+.seal-2fa-panel .seal-2fa-key-row details[open] { flex-basis: 100%; text-align: left; }
+.seal-2fa-panel .seal-2fa-confirm-form { background: #f6f7f7; border-radius: 6px; padding: 10px 12px; }
+.seal-2fa-panel .seal-2fa-confirm-form label { display: block; margin: 8px 0 4px; font-weight: 600; }
+.seal-2fa-panel .seal-2fa-confirm-form label:first-child, .seal-2fa-panel .seal-2fa-choice + label { margin-top: 0; }
+.seal-2fa-panel .seal-2fa-confirm-form input[type="password"], .seal-2fa-panel .seal-2fa-confirm-form input[type="text"]:not(.seal-2fa-code) { width: 18em; max-width: 100%; box-sizing: border-box; }
+.seal-2fa-panel .seal-2fa-choice { border: 0; margin: 0 0 10px; padding: 0; }
+.seal-2fa-panel .seal-2fa-choice legend { font-weight: 600; margin-bottom: 4px; padding: 0; }
+.seal-2fa-panel .seal-2fa-choice label { display: block; font-weight: normal; margin: 2px 0; }
+.seal-2fa-panel .seal-2fa-live:empty { display: none; }
+.seal-2fa-panel .seal-2fa-live { margin: 8px 0 0; font-weight: 600; }
+
+/* Account lists (User Accounts, Manage Accounts): name + email, library + LOC and password + two-factor share a
+   cell each, so the table fits the content column; long email addresses wrap instead of widening it. */
+.seal-acct-email { font-size: .85rem; overflow-wrap: anywhere; }
+:is(.rh-table, .seal-table) td.seal-acct-sec { white-space: nowrap; }
+.seal-acct-sec > span { display: block; margin: 0 0 4px; }
+.seal-acct-sec small { white-space: normal; }
+.seal-acct-lbl { display: inline-block; min-width: 4.6em; font-size: .78rem; color: #50575e; }
+.seal-decide-form button { padding: 4px 10px; font-size: .85rem; }
+:is(.rh-table, .seal-table) td.seal-nowrap { white-space: nowrap; }
+.seal-acct-hist { display: inline-block; margin-left: 6px; font-size: .85rem; }

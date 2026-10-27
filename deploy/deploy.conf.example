@@ -1,0 +1,4 @@
+# Copy to deploy/deploy.conf (not in version control) and fill in your server.
+HOST="user@server.library.org"                      # SSH login
+PLUGIN_DEST="/home/user/ill-wp/seal-ill-system/"     # where the plugin files go
+CRON_DEST="/home/user/ill-wp/cron_scripts/"          # where the cron scripts go

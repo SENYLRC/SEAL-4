@@ -1,0 +1,6 @@
+#!/bin/sh
+# fake curl: prints $FAKE_CURL_DIR/<last url segment>.json
+for a in "$@"; do last="$a"; done
+last=$(printf '%s' "$last" | tr -d "'\"")
+id=$(basename "$last")
+cat "$FAKE_CURL_DIR/$id.json" 2>/dev/null || echo '{}'

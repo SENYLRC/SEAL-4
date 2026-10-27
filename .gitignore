@@ -1,0 +1,24 @@
+# Database logins: never commit
+*_db.inc
+*_db.inc.*
+ill_db.inc*
+wp_db.inc*
+
+# Per-install settings kept out of the public repo
+cron/scripts/cron_local.php
+deploy/deploy.conf
+
+# Private notes (kept on the project share, not published)
+CLAUDE.md
+STATUS.md
+docs/AUDIT-*.md
+docs/SEAL-NOTES.md
+
+# Build output and local tools
+docs/*.docx
+docs/guide-source/*.docx
+docs/guide-source/__pycache__/
+venv/
+*.bak
+.DS_Store
+Thumbs.db

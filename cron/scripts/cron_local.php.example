@@ -1,0 +1,14 @@
+<?php
+// Copy to cron_local.php (same folder) and set this organization's values. cron_config.php reads it first;
+// anything not set here keeps the default shown in cron_config.php. Keep it out of version control.
+define('ILL_FROM_NAME', 'Town Library ILL');            // visible From name on every email
+define('ILL_FROM_EMAIL', 'donotreply@library.org');      // visible From address
+define('ILL_ENVELOPE_FROM', 'donotreply@library.org');   // bounces (mail -f); a domain your mail relay accepts
+define('ILL_ALERT_PREFIX', 'ILL ALERT');                 // start of alert subjects sent to ILL_NOC_EMAIL
+define('ILL_NOC_EMAIL', 'noc@library.org');              // told when something cannot be processed
+define('ILL_STATS_TO', 'ill@library.org');               // weekly statistics (comma separated)
+define('ILL_BASE_URL', 'https://ill.library.org');       // the WordPress site, for links in emails (no trailing slash)
+define('ILL_ILLIAD_SHIP_TEXT', 'Library Delivery');      // how ILLiad-filled items ship
+// define('ILL_TIMEZONE', 'America/New_York');
+// define('ILL_LOG_FILE', '/var/log/ill_cron.log');
+// define('ILL_HOLIDAY_REGION', 'US-NY');                // state for the holiday calendar

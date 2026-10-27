@@ -1,0 +1,12 @@
+ILL System (seal-ill-system) WordPress plugin
+Copyright Southeastern New York Library Resources Council
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+It includes third-party software under its own license:
+
+- lbuchs/webauthn 2.2.0 (includes/lib/WebAuthn/) - MIT License, Copyright (c) 2022 Lukas Buchs, (c) 2018 Thomas Bleeker.
+  See includes/lib/WebAuthn/LICENSE.
+- qrcode-generator 1.4.4 (assets/js/qrcode.js) - MIT License, Copyright (c) 2009 Kazuhiko Arase.
+- MKWS / pz2.js (assets/js/mkws-complete.js) - LGPL, Copyright (c) 2013-2015 Index Data ApS.
+  http://www.indexdata.com/licences/lgpl

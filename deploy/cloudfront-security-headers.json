@@ -1,0 +1,22 @@
+{
+  "Name": "ILL-SecurityHeaders",
+  "Comment": "ILL System: AWS SecurityHeadersPolicy plus CSP frame-ancestors and Permissions-Policy; hides the Server header",
+  "SecurityHeadersConfig": {
+    "StrictTransportSecurity": { "Override": true, "AccessControlMaxAgeSec": 31536000, "IncludeSubdomains": false, "Preload": false },
+    "ContentTypeOptions":      { "Override": true },
+    "FrameOptions":            { "Override": true, "FrameOption": "SAMEORIGIN" },
+    "XSSProtection":           { "Override": true, "Protection": true, "ModeBlock": true },
+    "ReferrerPolicy":          { "Override": true, "ReferrerPolicy": "strict-origin-when-cross-origin" },
+    "ContentSecurityPolicy":   { "Override": true, "ContentSecurityPolicy": "frame-ancestors 'self'" }
+  },
+  "CustomHeadersConfig": {
+    "Quantity": 1,
+    "Items": [
+      { "Header": "Permissions-Policy", "Value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()", "Override": true }
+    ]
+  },
+  "RemoveHeadersConfig": {
+    "Quantity": 1,
+    "Items": [ { "Header": "Server" } ]
+  }
+}
