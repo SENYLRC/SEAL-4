@@ -206,15 +206,25 @@ class SEAL_Resend {
     }
 
     /**
-     * Submit the request to the lender's ILLiad and save the transaction number on success.
-     * $force allows a second submission when ILLiad already has a transaction for it.
+     * Submit the request to the lender's ILLiad and save the transaction number on success. Used by /resend and
+     * by the request page for every new request to an ILLiad lender. $force allows a second submission when
+     * ILLiad already has a transaction for it. A transaction number is saved only when it is valid (valid_txn()),
+     * so a failed submission stays on the "Waiting to be sent to ILLiad" list.
      *
-     * @return array{ok:bool,code:string,msg:string,txn?:string,status?:string,detail?:string}
+     * @return array{ok:bool,code:string,msg:string,txn?:string,status?:string,detail?:string,sent?:string,url?:string,mapping_note?:string}
      */
     public static function send_to_illiad( array $req, bool $force = false ): array {
         $lib = self::lender( $req );
         if ( ! self::lender_uses_illiad( $lib ) ) {
+            if ( $lib && (string) ( $lib['Illiad'] ?? '' ) === '1' ) {
+                $missing = array_keys( array_filter( [ 'ILLiad URL' => trim( (string) ( $lib['IlliadURL'] ?? '' ) ) === '', 'API key' => trim( (string) ( $lib['APIkey'] ?? '' ) ) === '' ] ) );
+                return [ 'ok' => false, 'code' => 'incomplete', 'msg' => $lib['Name'] . ' is marked as an ILLiad library, but its library record has no ' . implode( ' and no ', $missing ) . '. Nothing was sent to ILLiad.' ];
+            }
             return [ 'ok' => false, 'code' => 'not_illiad', 'msg' => 'The lending library does not use ILLiad (or its ILLiad URL / API key is missing on its library record).' ];
+        }
+        $api_key = SEAL_Secret::open( (string) $lib['APIkey'] );
+        if ( $api_key === '' ) {
+            return [ 'ok' => false, 'code' => 'no_key', 'msg' => $lib['Name'] . '\'s ILLiad API key is encrypted but could not be read (ILL_DATA_KEY in wp-config.php missing or wrong). Nothing was sent to ILLiad.', 'url' => (string) $lib['IlliadURL'] ];
         }
         $existing = trim( (string) ( $req['IlliadTransID'] ?? '' ) );
         if ( $existing !== '' && ! $force ) {
@@ -231,27 +241,40 @@ class SEAL_Resend {
         $bl  = $bq ? ( $bq->fetch_assoc() ?: [] ) : [];
         $payload = self::illiad_payload( $req, $lib, $m['row'], $bl );
 
+        $json = (string) wp_json_encode( $payload );
+        $info = [ 'url' => (string) $lib['IlliadURL'], 'sent' => $json ];   // for the failure alert (no API key in it)
         $resp = wp_remote_post( (string) $lib['IlliadURL'], [
-            'headers'   => [ 'Content-Type' => 'application/json', 'ApiKey' => SEAL_Secret::open( (string) $lib['APIkey'] ) ],
-            'body'      => wp_json_encode( $payload ),
+            'headers'   => [ 'Content-Type' => 'application/json', 'ApiKey' => $api_key ],
+            'body'      => $json,
             'timeout'   => 20,
             'sslverify' => true,
         ] );
         if ( is_wp_error( $resp ) ) {
-            return [ 'ok' => false, 'code' => 'http_error', 'msg' => 'Could not reach ' . $lib['Name'] . '\'s ILLiad: ' . $resp->get_error_message() ];
+            return $info + [ 'ok' => false, 'code' => 'http_error', 'msg' => 'Could not reach ' . $lib['Name'] . '\'s ILLiad: ' . $resp->get_error_message() ];
         }
 
         $raw     = (string) wp_remote_retrieve_body( $resp );
         $decoded = json_decode( $raw, true );
-        $txn     = (string) ( $decoded['TransactionNumber'] ?? '' );
+        $txn     = trim( (string) ( $decoded['TransactionNumber'] ?? '' ) );
         $status  = (string) ( $decoded['TransactionStatus'] ?? '' );
-        if ( $txn === '' || ! ctype_digit( $txn ) ) {
-            return [ 'ok' => false, 'code' => 'no_txn', 'msg' => 'ILLiad answered (HTTP ' . (int) wp_remote_retrieve_response_code( $resp ) . ') but did not return a transaction number. Nothing was saved.', 'detail' => substr( $raw, 0, 1000 ) ];
+        if ( ! self::valid_txn( $txn ) ) {
+            return $info + [ 'ok' => false, 'code' => 'no_txn', 'msg' => 'ILLiad answered (HTTP ' . (int) wp_remote_retrieve_response_code( $resp ) . ') but did not return a valid transaction number'
+                . ( $txn !== '' ? ' (it returned "' . $txn . '")' : '' ) . '. Nothing was saved.', 'detail' => substr( $raw, 0, 5000 ), 'status' => $status ];
         }
 
-        SEAL_DB::query( "UPDATE %t SET `IlliadStatus`=%s, `IlliadTransID`=%s WHERE `illNUB`=%s", SEAL_DB::$sealSTAT, $status, $txn, (string) $req['illNUB'] );
-        $note = $m['exact'] ? '' : ' Note: no mapping row for this exact borrower/lender pair, so the borrower\'s first mapping row was used — check ILL Admin → ILLiad Mapping.';
-        return [ 'ok' => true, 'code' => 'ok', 'msg' => 'Sent to ' . $lib['Name'] . '\'s ILLiad: transaction ' . $txn . ( $status !== '' ? ' (' . $status . ')' : '' ) . '.' . $note, 'txn' => $txn, 'status' => $status ];
+        $note  = $m['exact'] ? '' : 'No ILLiad mapping row for borrower ' . $borrower . ' → lender ' . $lib['loc'] . ', so the borrower\'s first mapping row was used — check ILL Admin → ILLiad Mapping.';
+        $saved = SEAL_DB::query( "UPDATE %t SET `IlliadStatus`=%s, `IlliadTransID`=%s WHERE `illNUB`=%s", SEAL_DB::$sealSTAT, $status, $txn, (string) $req['illNUB'] );
+        if ( ! $saved ) {
+            return $info + [ 'ok' => false, 'code' => 'db', 'txn' => $txn, 'status' => $status, 'msg' => 'ILLiad created transaction ' . $txn . ', but saving it on the request failed: '
+                . SEAL_DB::last_error() . '. Do not send it again (that would make a second ILLiad transaction); the ILLiad transaction number is ' . $txn . '.' ];
+        }
+        return [ 'ok' => true, 'code' => 'ok', 'msg' => 'Sent to ' . $lib['Name'] . '\'s ILLiad: transaction ' . $txn . ( $status !== '' ? ' (' . $status . ')' : '' ) . '.' . ( $note !== '' ? ' Note: ' . $note : '' ),
+                 'txn' => $txn, 'status' => $status, 'mapping_note' => $note ] + $info;
+    }
+
+    /** An ILLiad transaction number worth saving: digits only, at least 4 of them (the check SEAL used). */
+    public static function valid_txn( string $txn ): bool {
+        return $txn !== '' && ctype_digit( $txn ) && strlen( $txn ) >= 4;
     }
 
     // ── Log ───────────────────────────────────────────────────────────────────
@@ -276,7 +299,7 @@ class SEAL_Resend {
             SEAL_DB::$sealSTAT, $since
         );
         $illiad = [];
-        $lq = SEAL_DB::query( "SELECT `loc` FROM %t WHERE `Illiad`='1' AND `IlliadURL`<>'' AND `APIkey`<>''", SEAL_DB::$sealLIB );
+        $lq = SEAL_DB::query( "SELECT `loc` FROM %t WHERE `Illiad`='1'", SEAL_DB::$sealLIB );
         while ( $lq && ( $l = $lq->fetch_assoc() ) ) { $illiad[ strtolower( trim( (string) $l['loc'] ) ) ] = true; }
 
         $out = [];

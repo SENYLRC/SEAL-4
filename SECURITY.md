@@ -219,3 +219,16 @@ project's reviewed design. Design notes relevant to review:
   refuses admin-post and admin-ajax actions except the two security-key setup calls, and shortcode-embedded ILL pages check it too.
 - **Adding an authenticator app** needs the current password, like adding a key (a code from the new app only proves possession of the session).
 - Stub test: `tests/test-2fa-hardening.php`.
+
+## v3.15.0: security keys, forced resets, approvals
+
+- **Security-key origins:** the bundled library accepts any https host ending in the relying-party id (and any port).
+  `SEAL_WebAuthn::origin_ok()` also requires the exact site origin (https, host and port from the home / site URL) and refuses
+  cross-origin frames, for registration and sign-in, before the library's own checks (signature, challenge, RP-ID hash,
+  presence, counter), which are unchanged. The vendored library is not modified.
+- **Forced password reset and breached passwords** apply to every sign-in channel, XML-RPC included. Only the breach lookup is
+  skipped for a genuine application password (WordPress's `application_password_did_authenticate`).
+- **Two-factor set-up gate** runs first on `admin_init` (priority -9999); the Approve / Deny handlers (Users-screen links,
+  emailed links, bulk action, ILL account pages) also check it themselves.
+- Stub tests: `tests/test-webauthn-origin.php` (real P-256 signatures), `tests/test-password-rules.php`,
+  `tests/test-approval-gate.php` (full admin_init sequence).

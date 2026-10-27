@@ -12,11 +12,14 @@
  *   - WordPress has no PHP session, so each challenge is kept in user meta (seal_2fa_wa_chal): single-use,
  *     120 seconds, bound to the user and to "reg" or "login".
  *
+ * Origins: the library accepts any https host ending in the relying-party id; SEAL_WebAuthn::origin_ok() also
+ * requires the exact site origin (scheme, host and port) for registration and sign-in.
+ *
  * Decisions kept from Argus: touch only (userVerification "discouraged", no key PIN — the password is already
  * the first factor); user presence required; resident keys not required (second factor, not passwordless);
  * any FIDO2 maker accepted (attestation roots not checked); the stored counter is passed so a cloned key with a
  * counter that doesn't rise is refused. The relying-party id is this site's host name, so a key registered on
- * linxbeta.cdlc.org does not work on linx.cdlc.org (and a phishing site can't use it).
+ * a test site does not work on the live site (and a phishing site can't use it).
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -51,6 +54,33 @@ class SEAL_WebAuthn {
     /** This site's host name: the relying-party id every key is bound to. */
     public static function rp_id(): string {
         return (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+    }
+
+    /**
+     * The browser origins allowed to use this site's keys: the site's own address (home and site URL) as
+     * https://host[:port]. Checked exactly, because the bundled library only checks that the host ends with the
+     * relying-party id (so any sub-domain, or any port, would pass).
+     */
+    public static function allowed_origins(): array {
+        $out = [];
+        foreach ( [ home_url( '/' ), site_url( '/' ) ] as $url ) {
+            $p    = wp_parse_url( $url );
+            $host = strtolower( trim( (string) ( $p['host'] ?? '' ), '.' ) );
+            if ( $host === '' ) { continue; }
+            // WebAuthn needs https except on localhost, so an http:// site address means its https:// origin.
+            $scheme = $host === 'localhost' ? strtolower( (string) ( $p['scheme'] ?? 'https' ) ) : 'https';
+            $port   = isset( $p['port'] ) && (int) $p['port'] !== ( $scheme === 'https' ? 443 : 80 ) ? ':' . (int) $p['port'] : '';
+            $out[ $scheme . '://' . $host . $port ] = true;
+        }
+        return array_keys( $out );
+    }
+
+    /** True when the browser's clientDataJSON comes from an allowed origin, top level (not from inside another site's frame). */
+    public static function origin_ok( string $client_data_json ): bool {
+        $c = json_decode( $client_data_json, true );
+        if ( ! is_array( $c ) || ! empty( $c['crossOrigin'] ) ) { return false; }
+        $origin = strtolower( (string) ( $c['origin'] ?? '' ) );
+        return $origin !== '' && in_array( $origin, self::allowed_origins(), true );
     }
 
     /** A library instance for this site: relying-party name from the System / Org Short Names, id = this host. */
@@ -145,6 +175,9 @@ class SEAL_WebAuthn {
     /** Verifies the browser's response and stores the key. @throws RuntimeException with a message for the person. */
     public static function finish_registration( WP_User $user, string $name, string $kind, string $client_data_json, string $attestation ): array {
         $challenge = self::take( 'reg', (int) $user->ID );
+        if ( ! self::origin_ok( $client_data_json ) ) {
+            throw new RuntimeException( 'That security key could not be added: the request did not come from this site\'s address.' );
+        }
         try {
             // requireUserVerification=false, requireUserPresent=true, failIfRootMismatch=false
             $data = self::wa()->processCreate( $client_data_json, $attestation, $challenge, false, true, false );
@@ -189,6 +222,7 @@ class SEAL_WebAuthn {
         } catch ( RuntimeException $e ) {
             return false;
         }
+        if ( ! self::origin_ok( $client_data_json ) ) { return false; }   // before the library's own (looser) origin check
         $keys = self::keys( (int) $user->ID );
         $cred = base64_encode( $credential_id );
         foreach ( $keys as $i => $k ) {

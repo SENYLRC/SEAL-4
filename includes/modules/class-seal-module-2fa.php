@@ -68,7 +68,7 @@ class SEAL_Module_2FA {
         add_action( 'wp_ajax_seal_2fa_key_add',     [ __CLASS__, 'ajax_key_add' ] );         // add a key: finish (JSON)
         add_filter( 'wp_login_errors',             [ __CLASS__, 'login_notices' ] );
         add_action( 'template_redirect',           [ __CLASS__, 'gate' ], 5 );
-        add_action( 'admin_init',                  [ __CLASS__, 'gate' ] );
+        add_action( 'admin_init',                  [ __CLASS__, 'gate' ], -9999 );   // before any handler that changes something (e.g. Approve / Deny links)
 
         add_action( 'show_user_profile',           [ __CLASS__, 'profile_section' ] );
         add_action( 'edit_user_profile',           [ __CLASS__, 'profile_section' ] );

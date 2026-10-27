@@ -605,7 +605,6 @@ class SEAL_Page_Request extends SEAL_Page_Base {
         $db        = SEAL_DB::get();
         $stat_tbl  = SEAL_DB::$sealSTAT;
         $lib_tbl   = SEAL_DB::$sealLIB;
-        $illiad_tbl= SEAL_DB::$sealILLiadMapping;
         $today     = current_time( 'mysql' );
         $uid       = $this->user->ID;
 
@@ -799,9 +798,7 @@ class SEAL_Page_Request extends SEAL_Page_Base {
 
             // ── ILLiad API submission ──────────────────────────────────────
             if ( ! empty( $illiad_row['Illiad'] ) && $illiad_row['Illiad'] == '1' ) {
-                $this->submit_to_illiad( $illiad_row, $illnum, $insert_id, $stat_tbl, $lib_tbl, $illiad_tbl,
-                    $req_loc, $ititle, $iauthor, $itemcall, $pubdate, $isbn, $issn, $needbydate, $reqnote,
-                    $arttile, $artauthor, $artvolume, $artissue, $artpage, $artyear );
+                $this->submit_to_illiad( $illnum );
             }
 
             // ── Emails ────────────────────────────────────────────────────
@@ -899,132 +896,35 @@ class SEAL_Page_Request extends SEAL_Page_Base {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Posts a new request to the lender's ILLiad Web Platform API using the borrower's ILLiad address mapping,
-     * and saves the returned transaction number. Failures alert the administrators; the request can be sent
-     * again from /resend.
+     * Sends a new request to the lender's ILLiad through SEAL_Resend::send_to_illiad() (the same path as /resend:
+     * borrower → lender address mapping, payload from the saved request, transaction number saved only when valid).
+     * Any failure, and a request sent with the fallback mapping, emails the alert addresses with what was sent and
+     * what ILLiad answered; the request can then be sent again from /resend ("Waiting to be sent to ILLiad").
      */
-    private function submit_to_illiad(
-        array $illiad_row, string $illnum, int $insert_id, string $stat_tbl,
-        string $lib_tbl, string $illiad_tbl, string $req_loc,
-        string $title, string $author, string $callnum, string $pubdate,
-        string $isbn, string $issn, string $needby, string $reqnote,
-        string $arttile, string $artauthor, string $artvol,
-        string $artissue, string $artpage, string $artyear
-    ): void {
+    private function submit_to_illiad( string $illnum ): void {
+        $req = SEAL_Resend::find( $illnum );
+        $r   = $req ? SEAL_Resend::send_to_illiad( $req ) : [ 'ok' => false, 'code' => 'not_found', 'msg' => 'The saved request could not be read back from the database.' ];
+        if ( $r['ok'] && ( $r['mapping_note'] ?? '' ) === '' ) { return; }
 
-        $illiad_url  = $illiad_row['IlliadURL']  ?? '';
-        $illiad_days = $illiad_row['IlliadDATE'] ?? 14;
-        $api_key     = SEAL_Secret::open( (string) ( $illiad_row['APIkey'] ?? '' ) );   // stored encrypted (ILL_DATA_KEY)
-
-        if ( ! $illiad_url || ! $api_key ) { return; }
-
-        // Requester details from library table
-        $req_q = SEAL_DB::query(
-            "SELECT loc,Name,ill_email,address2,address3,OCLC,system FROM %t WHERE `loc` = %s LIMIT 1",
-            $lib_tbl, $req_loc
-        );
-        $req_row = $req_q ? $req_q->fetch_assoc() : [];
-
-        // ILLiad address mapping
-        $map_q = SEAL_DB::query(
-            "SELECT * FROM %t WHERE `LOC` = %s LIMIT 1",
-            $illiad_tbl, $req_loc
-        );
-        $map_row = $map_q ? $map_q->fetch_assoc() : [];
-        $illiad_add = $map_row['illiadADDnumb'] ?? '';
-        $illiad_sym = $map_row['illiadLIBSymbol'] ?? '';
-
-        $due_date = date( 'Y-m-d', strtotime( '+' . (int) $illiad_days . ' days' ) );
-        $addr3    = trim( (string) ( $req_row['address3'] ?? '' ) );
-        $addr3    = str_replace( ',', '', $addr3 );
-        $pieces   = explode( ' ', $addr3 );
-        $city     = $pieces[0] ?? '';
-        $state    = $pieces[1] ?? '';
-        $zip      = $pieces[2] ?? '';
-
-        $payload = empty( $arttile )
-            ? [
-                'Username'           => 'Lending',
-                'LendingString'      => $reqnote,
-                'RequestType'        => 'Loan',
-                'DueDate'            => $due_date . 'T00:00:00-04:00',
-                'ProcessType'        => 'Lending',
-                'LenderAddressNumber'=> $illiad_add,
-                'LendingLibrary'     => $illiad_sym,
-                'TransactionStatus'  => 'Awaiting Lending Request Processing',
-                'LoanTitle'          => $title,
-                'LoanAuthor'         => $author,
-                'CallNumber'         => $callnum,
-                'LoanDate'           => $pubdate,
-                'ISSN'               => $isbn,
-                'ILLNumber'          => $illnum,
-                'TAddress'           => $req_row['Name'] ?? '',
-                'TAddress2'          => $req_row['address2'] ?? '',
-                'TCity'              => $city,
-                'TState'             => $state,
-                'TZip'               => $zip,
-                'TEMailAddress'      => $req_row['ill_email'] ?? '',
-            ]
-            : [
-                'Username'             => 'Lending',
-                'LendingString'        => $reqnote,
-                'ProcessType'          => 'Lending',
-                'LenderAddressNumber'  => $illiad_add,
-                'LendingLibrary'       => $illiad_sym,
-                'TransactionStatus'    => 'Awaiting Lending Request Processing',
-                'LoanTitle'            => $title,
-                'LoanAuthor'           => $author,
-                'CallNumber'           => $callnum,
-                'LoanDate'             => $pubdate,
-                'PhotoArticleTitle'    => $arttile,
-                'PhotoArticleAuthor'   => $artauthor,
-                'PhotoJournalVolume'   => $artvol,
-                'PhotoJournalIssue'    => $artissue,
-                'PhotoJournalYear'     => $artyear,
-                'PhotoJournalInclusivePages' => $artpage,
-                'ISSN'                 => $issn,
-                'ILLNumber'            => $illnum,
-                'TAddress'             => $req_row['Name'] ?? '',
-                'TAddress2'            => $req_row['address2'] ?? '',
-                'TCity'                => $city,
-                'TState'               => $state,
-                'TZip'                 => $zip,
-                'TEMailAddress'        => $req_row['ill_email'] ?? '',
-            ];
-
-        $response = wp_remote_post( $illiad_url, [
-            'headers' => [
-                'Content-Type' => 'application/json',
-                'ApiKey'       => $api_key,
-            ],
-            'body'    => wp_json_encode( $payload ),
-            'timeout' => 20,
-            'sslverify' => true,
-        ] );
-
-        $txn_num = '';
-        $txn_status = '';
-
-        if ( ! is_wp_error( $response ) ) {
-            $decoded = json_decode( wp_remote_retrieve_body( $response ), true );
-            $txn_num    = (string) ( $decoded['TransactionNumber'] ?? '' );
-            $txn_status = (string) ( $decoded['TransactionStatus'] ?? '' );
+        $pre  = static fn( string $s ): string => '<pre style="white-space:pre-wrap;word-break:break-all;font-size:12px;">' . esc_html( $s ) . '</pre>';
+        $rows = [
+            'ILL #'           => $illnum,
+            'Lending library' => (string) ( $req['Destination'] ?? '' ),
+            'Borrower'        => (string) ( $req['Requester LOC'] ?? '' ),
+            'ILLiad URL'      => (string) ( $r['url'] ?? '' ),
+            'Problem'         => (string) $r['code'],
+            'Returned status' => (string) ( $r['status'] ?? '' ),
+        ];
+        $body = '<p>' . esc_html( $r['msg'] ) . '</p>' . SEAL_Functions::email_details( array_filter( $rows, 'strlen' ) );
+        if ( ! empty( $r['detail'] ) ) { $body .= '<p><strong>ILLiad\'s response:</strong></p>' . $pre( (string) $r['detail'] ); }
+        if ( ! empty( $r['sent'] ) )   { $body .= '<p><strong>What was sent (JSON, no API key):</strong></p>' . $pre( (string) $r['sent'] ); }
+        if ( ! $r['ok'] && $r['code'] !== 'db' ) {
+            $body .= SEAL_Functions::email_button( add_query_arg( 'num', $illnum, home_url( '/resend' ) ), 'Send it to ILLiad again' );
         }
-
-        // Validate transaction number
-        if ( ! $txn_num || ! ctype_digit( $txn_num ) || strlen( $txn_num ) < 4 ) {
-            SEAL_Functions::send_alert(
-                "ILLiad Failure (no TransactionNumber) — " . seal_config('system_name') . " ILL $illnum",
-                '<p>ILLiad API did not return a valid TransactionNumber.</p>'
-                . '<p><strong>ILL #:</strong> ' . esc_html( $illnum ) . '</p>'
-                . '<p><strong>Returned TransactionNumber:</strong> ' . esc_html( $txn_num ) . '</p>'
-                . '<p><strong>Returned Status:</strong> ' . esc_html( $txn_status ) . '</p>'
-            );
-        }
-
-        SEAL_DB::query(
-            "UPDATE %t SET `IlliadStatus` = %s, `IlliadTransID` = %s WHERE `index` = %d",
-            $stat_tbl, $txn_status, $txn_num, $insert_id
+        if ( ! $r['ok'] ) { SEAL_Resend::log( $illnum, 'Send to ILLiad (new request)', false, $r['msg'] ); }
+        SEAL_Functions::send_alert(
+            ( $r['ok'] ? 'ILLiad mapping missing' : 'ILLiad Failure (no TransactionNumber)' ) . ' — ' . seal_config( 'system_name' ) . " ILL $illnum",
+            $body
         );
     }
 

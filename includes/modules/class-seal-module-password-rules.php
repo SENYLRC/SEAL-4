@@ -20,6 +20,9 @@ class SEAL_Module_PasswordRules {
 
     const META_FORCE = 'seal_force_pw_reset';
 
+    /** True once WordPress has accepted an application password in this request (not the account password). */
+    private static bool $app_password = false;
+
     /** True when the Passwords module is on and not switched off from wp-config.php. */
     public static function active(): bool {
         return seal_config( 'module_password_rules' ) === '1' && ! seal_security_disabled();
@@ -31,6 +34,7 @@ class SEAL_Module_PasswordRules {
      */
     public static function init(): void {
         add_filter( 'authenticate',              [ __CLASS__, 'check_login' ], 50, 3 );
+        add_action( 'application_password_did_authenticate', [ __CLASS__, 'note_app_password' ] );   // fires at authenticate priority 20
         add_action( 'after_password_reset',      [ __CLASS__, 'clear_flag' ], 10, 1 );
         add_action( 'profile_update',            [ __CLASS__, 'clear_flag_on_change' ], 10, 2 );
 
@@ -78,15 +82,13 @@ class SEAL_Module_PasswordRules {
 
     /**
      * At login, after the password is accepted: refuses the login and emails a reset link when an administrator
-     * forced a reset, or when the password is found in the breach list (for the chosen roles). Application
-     * passwords (REST / XML-RPC) are not checked.
+     * forced a reset, or when the password is found in the breach list (for the chosen roles). Applies to every
+     * way of signing in, XML-RPC included (it accepts the account password too). Only the breach check is skipped
+     * for an application password, which is a random token, not a password the person chose.
      */
     public static function check_login( $user, $username = '', $password = '' ) {
         if ( ! ( $user instanceof WP_User ) || $password === '' || $password === null ) {
             return $user;
-        }
-        if ( ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || defined( 'XMLRPC_REQUEST' ) ) {
-            return $user; // application passwords are random tokens, not user-chosen passwords
         }
 
         $forced = (string) get_user_meta( $user->ID, self::META_FORCE, true );
@@ -94,7 +96,7 @@ class SEAL_Module_PasswordRules {
 
         if ( $forced !== '' ) {
             $reason = 'admin';
-        } elseif ( seal_config( 'pw_pwned' ) === '1' && self::role_applies( $user ) && self::is_pwned( (string) $password ) === true ) {
+        } elseif ( ! self::$app_password && seal_config( 'pw_pwned' ) === '1' && self::role_applies( $user ) && self::is_pwned( (string) $password ) === true ) {
             $reason = 'pwned';
             update_user_meta( $user->ID, self::META_FORCE, 'pwned' );
         }
@@ -111,6 +113,11 @@ class SEAL_Module_PasswordRules {
             'seal_pw_reset_required',
             esc_html( $msg . ' A password reset link has been emailed to the address on your account.' )
         );
+    }
+
+    /** Notes that this request signed in with an application password (WordPress's own check, before check_login()). */
+    public static function note_app_password(): void {
+        self::$app_password = true;
     }
 
     /** At most one reset email per user every 10 minutes. */

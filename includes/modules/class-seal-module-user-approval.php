@@ -144,6 +144,7 @@ class SEAL_Module_UserApproval {
      */
     public static function handle_email_action(): void {
         if ( ! isset( $_GET['seal_decide'], $_GET['seal_action'], $_GET['seal_token'] ) ) { return; }
+        self::require_2fa_setup();
         $uid    = (int) $_GET['seal_decide'];
         $action = sanitize_key( wp_unslash( $_GET['seal_action'] ) );
         $token  = sanitize_text_field( wp_unslash( $_GET['seal_token'] ) );
@@ -219,10 +220,21 @@ class SEAL_Module_UserApproval {
 
     // ── Admin: one-click approve/deny from email link ─────────────────────────
 
+    /**
+     * Refuses an approval when the person's role requires two-factor and they haven't set it up. The Two-Factor
+     * gate also runs first on admin_init; this keeps the handlers safe whatever the hook order.
+     */
+    private static function require_2fa_setup(): void {
+        if ( class_exists( 'SEAL_Module_2FA' ) && SEAL_Module_2FA::needs_setup( wp_get_current_user() ) ) {
+            wp_die( esc_html__( 'Set up two-factor authentication on My Profile before approving or denying accounts.', 'seal-ill' ), '', [ 'response' => 403 ] );
+        }
+    }
+
     /** Approve / Deny from the links on the Users screen (needs edit_users and a valid nonce). */
     public static function handle_quick_action(): void {
         if ( ! current_user_can( 'edit_users' ) ) { return; }
         if ( ! isset( $_GET['seal_approve'], $_GET['seal_action'], $_GET['_nonce'] ) ) { return; }
+        self::require_2fa_setup();
 
         $uid    = (int) $_GET['seal_approve'];
         $action = sanitize_key( $_GET['seal_action'] );
@@ -248,6 +260,7 @@ class SEAL_Module_UserApproval {
     public static function decide( int $uid, string $action ): bool {
         if ( ! in_array( $action, [ 'approve', 'deny' ], true ) || $uid === get_current_user_id() ) { return false; }
         if ( get_user_meta( $uid, self::META_KEY, true ) !== 'pending' ) { return false; }
+        self::require_2fa_setup();
         self::process_action( $uid, $action );
         return true;
     }
@@ -317,6 +330,7 @@ class SEAL_Module_UserApproval {
     public static function handle_bulk( string $redirect, string $action, array $user_ids ): string {
         if ( ! in_array( $action, [ 'seal_bulk_approve', 'seal_bulk_deny' ], true ) ) { return $redirect; }
         if ( ! current_user_can( 'edit_users' ) ) { return $redirect; }
+        self::require_2fa_setup();
 
         $act = $action === 'seal_bulk_approve' ? 'approve' : 'deny';
         $count = 0;
