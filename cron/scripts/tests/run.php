@@ -33,6 +33,10 @@ copy("$S/test_closures.php", "$T/test_closures.php");
 copy("$S/test_nager_filter.php", "$T/test_nager_filter.php");
 copy("$S/test_business_days.php", "$T/test_business_days.php");
 
+function ill_cron_columns_for_test(): array {
+    preg_match('/function ill_cron_columns\(\): array\n\{\n(.*?)\n\}/s', (string) file_get_contents(dirname(__DIR__) . '/cron_config.php'), $m);
+    return eval($m[1]);
+}
 $fail = 0;
 function t($n, $ok, $extra = '') { global $fail; if (!$ok) $fail++; echo ($ok ? 'PASS ' : 'FAIL ') . $n . ($ok ? '' : "  $extra") . "\n"; }
 
@@ -369,6 +373,24 @@ $r = run('test_nager_filter.php');
 $j = last_json($r);
 t('keeps nationwide and New York holidays only, one entry per date', $j === ['2026-01-01', '2026-10-12'], $r['out']);
 t('drops observances, other states\' holidays, school-only days and malformed dates', is_array($j) && !array_intersect($j, ['2026-02-12', '2026-04-03', '2026-05-08', 'garbage']));
+
+echo "=== cron_config.php --check-db (tables and columns) ===\n";
+$cols = static fn(array $names) => array_map(fn($n) => ['Field' => $n], $names);
+$need = ill_cron_columns_for_test();
+$r = run('cron_config.php', [
+  ['match' => "Ssl_cipher", 'rows' => [['Variable_name' => 'Ssl_cipher', 'Value' => 'TLS_AES_256_GCM_SHA384']]],
+  ['match' => "SHOW COLUMNS FROM `STATS`", 'rows' => $cols(array_diff($need['illSTAT'], ['shipMethod']))],
+  ['match' => "SHOW COLUMNS FROM `LIB`", 'rows' => $cols($need['illLIB'])],
+  ['match' => "SHOW COLUMNS FROM `ILL-ROTA`", 'error' => "Table 'ill.ILL-ROTA' doesn't exist"],
+], [], ['--check-db']);
+t('reports encryption', str_contains($r['out'], 'ILL database:       encrypted (TLS_AES_256_GCM_SHA384)'), $r['out']);
+t('missing column named', str_contains($r['out'], '$illSTAT:') && str_contains($r['out'], 'MISSING columns: shipMethod'), $r['out']);
+t('complete table ok', (bool) preg_match('/\$illLIB:\s+`LIB` ok \(12 columns used\)/', $r['out']), $r['out']);
+t('missing rota table explained', str_contains($r['out'], '`ILL-ROTA` does not exist (only needed with Automatic Fallback)'), $r['out']);
+$plugin = (string) file_get_contents(dirname($root, 2) . '/includes/class-seal-db-schema.php');
+$gaps = [];
+foreach ($need as $var => $list) foreach ($list as $c) if (stripos($plugin, "'" . $c . "'") === false) $gaps[] = $c;
+t('every column the scripts need is in the plugin\'s list (SEAL_DB_Schema::TABLES)', !$gaps, implode(', ', $gaps));
 
 echo "=== safety ===\n";
 $web = shell_exec('cd '.escapeshellarg($T).' && REQUEST_METHOD=GET php-cgi -v 2>&1 | head -1');

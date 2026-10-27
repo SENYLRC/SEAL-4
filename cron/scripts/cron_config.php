@@ -799,6 +799,24 @@ function ill_get_holidays(): array
     return $clean;
 }
 
+/**
+ * Columns each table must have for these scripts, keyed by the ill_db.inc variable holding the table's name. Keep in step
+ * with the scripts; the WordPress plugin's full list is SEAL_DB_Schema::TABLES.
+ */
+function ill_cron_columns(): array
+{
+    return [
+        'illSTAT' => ['index', 'illNUB', 'Title', 'Author', 'pubdate', 'reqisbn', 'reqissn', 'Itype', 'Call Number', 'Location', 'Available',
+            'article', 'needbydate', 'reqnote', 'patronnote', 'Destination', 'DestSystem', 'Requester lib', 'saddress', 'caddress',
+            'Requester person', 'requesterEMAIL', 'requesterPhone', 'Timestamp', 'Fill', 'responderNOTE', 'emailsent', 'receiveAccount',
+            'fillNofillDate', 'returnAccount', 'returnNote', 'renewNote', 'renewNoteLender', 'checkinAccount', 'DueDate', 'reasonNotFilled',
+            'shipMethod', 'IlliadStatus', 'IlliadTransID'],
+        'illLIB'  => ['Name', 'system', 'alias', 'loc', 'suspend', 'participant', 'ill_email', 'SuspendDateEnd', 'SuspendCheckDate',
+            'Illiad', 'APIkey', 'IlliadURL'],
+        'illROTA' => ['illNUB', 'status', 'hop', 'hop_started', 'queue', 'history', 'updated'],
+    ];
+}
+
 // `php cron_config.php --check-db` (from the scripts folder): connect to both databases the way the jobs do and show
 // whether each connection is encrypted. Changes nothing.
 if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__ && in_array('--check-db', $argv ?? [], true)) {
@@ -825,5 +843,18 @@ if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE
         }
         echo 'ILLiad API keys:    ' . $n['ok'] . ' encrypted and readable, ' . $n['bad'] . ' encrypted but NOT readable, ' . $n['plain'] . ' plain text'
             . (($illDataKey ?? '') === '' ? '  ($illDataKey not set in ill_db.inc)' : '') . "\n";
+    }
+    if ($ill) {   // tables and the columns these scripts use (the full check is in WordPress: ILL System -> Database -> Database check)
+        foreach (ill_cron_columns() as $var => $cols) {
+            $table = (string) ($$var ?? ($var === 'illROTA' ? 'ILL-ROTA' : ''));
+            $have  = [];
+            $r     = $table === '' ? false : mysqli_query($ill, 'SHOW COLUMNS FROM `' . str_replace('`', '', $table) . '`');
+            while ($r && ($row = mysqli_fetch_assoc($r))) { $have[strtolower((string) $row['Field'])] = true; }
+            $missing = array_values(array_filter($cols, static fn($c) => !isset($have[strtolower($c)])));
+            $label   = str_pad('$' . $var . ':', 20);
+            if ($table === '') { echo $label . "not set in ill_db.inc\n"; continue; }
+            if (!$r) { echo $label . "`$table` " . ($var === 'illROTA' ? 'does not exist (only needed with Automatic Fallback)' : 'does NOT exist') . "\n"; continue; }
+            echo $label . "`$table` " . ($missing ? 'MISSING columns: ' . implode(', ', $missing) : 'ok (' . count($cols) . ' columns used)') . "\n";
+        }
     }
 }

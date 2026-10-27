@@ -239,6 +239,7 @@ def build(g):
         ["cron/scripts/", "The scheduled scripts and their README. Copied to the server's scripts folder; never served from the web."],
         ["docs/", "Internal notes. Never served from the web."],
         ["deploy/", "The copy-to-server script used for updates. Not needed on the server."],
+        ["tests/", "Developer tests (for example of the database check). Not needed on the server."],
     ], [2.4, 4.1])
 
     g.h1("Appendix C. Glossary")

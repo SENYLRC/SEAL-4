@@ -18,6 +18,7 @@ function mysqli_affected_rows($db){return $db->affected_rows;}
 function mysqli_num_rows($r){return $r?$r->num_rows:0;}
 function mysqli_fetch_assoc($r){return $r&&$r->rows?array_shift($r->rows):null;}
 function mysqli_fetch_array($r){return mysqli_fetch_assoc($r);}
+function mysqli_fetch_row($r){$a=mysqli_fetch_assoc($r);return $a===null?null:array_values($a);}
 function mysqli_query($db,$sql){
   file_put_contents(getenv('SHIM_LOG'),json_encode(['sql'=>preg_replace('/\s+/',' ',trim($sql))])."\n",FILE_APPEND);
   $is_write=(bool)preg_match('/^\s*(UPDATE|INSERT|DELETE)/i',$sql);

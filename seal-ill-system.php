@@ -3,7 +3,7 @@
  * Plugin Name:       Southeastern ILL System
  * Plugin URI:        https://github.com/SENYLRC/SEAL-4
  * Description:       Complete Interlibrary Loan management system. Includes the ILL request workflow, lender response, renewals, statistics, user profile fields, login redirect, Terms of Service gate, catalog search header, dashboard quick links, and user CSV export — all in one plugin, fully configurable for any region without code changes.
- * Version:           3.12.0
+ * Version:           3.13.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Zachary Spalding (SENYLRC) & Claude (Anthropic)
@@ -19,7 +19,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'SEAL_ILL_VERSION',    '3.12.0' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
+define( 'SEAL_ILL_VERSION',    '3.13.0' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
 define( 'SEAL_ILL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEAL_ILL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -250,6 +250,7 @@ require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-sidebar.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-router.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-rota.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-secret.php';   // ILLiad API keys encrypted with ILL_DATA_KEY
+require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-db-schema.php';   // expected tables / columns; Database check
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-resend.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-emails.php';   // editable subjects; branded account emails
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-setup-reminders.php';   // reminders before the set-password link expires
@@ -372,6 +373,7 @@ add_action( 'admin_menu',  [ 'SEAL_Admin', 'register_menu'     ] );
 add_action( 'admin_enqueue_scripts', [ 'SEAL_Admin', 'enqueue_rules_assets' ] );
 add_action( 'admin_post_seal_rules_import', [ 'SEAL_Admin', 'handle_import' ] );
 add_action( 'admin_post_seal_encrypt_illiad_keys', [ 'SEAL_Admin', 'handle_encrypt_keys' ] );
+add_action( 'admin_post_seal_create_ill_tables', [ 'SEAL_Admin', 'handle_create_tables' ] );
 add_action( 'admin_init',  [ 'SEAL_Admin', 'register_settings' ] );
 add_action( 'admin_notices', [ 'SEAL_Functions', 'email_mode_notice' ] );
 add_action( 'wp_body_open',  [ 'SEAL_Functions', 'email_mode_bar' ] );

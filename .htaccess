@@ -8,5 +8,5 @@
 <FilesMatch "\.(php|phtml|phar)$">
     Require all denied
 </FilesMatch>
-RedirectMatch 404 /seal-ill-system/(cron|docs|includes/lib)(/|$)
+RedirectMatch 404 /seal-ill-system/(cron|docs|tests|includes/lib)(/|$)
 Options -Indexes

@@ -114,6 +114,30 @@ def build(g):
     ])
     g.note("Keep a copy of the key somewhere safe and separate from the database backups. Without it the stored ILLiad keys can't be read, "
            "and each ILLiad library would have to send its key again. With it, a database login, export or backup shows only scrambled keys.", "warn")
+    g.h3("Database check")
+    g.p("**Run database check**, at the bottom of this screen, compares the ILL database with what this version of the plugin needs. It only "
+        "reads (the table structure, and a few counts in the library table). Each line is marked OK, Note, Warning or Problem, and most come "
+        "with the SQL that fixes them, to run yourself after a backup. Run it after setting up a site, after moving the database to another "
+        "server, and after each plugin update.")
+    g.table(["It checks", "Why it matters"], [
+        ["Connection and encryption", "Whether the site can reach the database, and whether the traffic is encrypted (TLS)."],
+        ["Strict SQL mode", "With strict mode (MySQL's default) the database refuses a row that leaves out a required value or holds one "
+         "that doesn't fit, instead of guessing. The other findings say which columns matter."],
+        ["Each table exists", "A missing table is a Problem; **Create the missing tables** creates it, empty. Existing tables are never changed. "
+         "The fallback table is only needed when Automatic Fallback is on."],
+        ["Required and optional columns", "A missing required column breaks the pages or jobs that use it (Problem, with ALTER TABLE … ADD COLUMN). "
+         "Missing optional columns only hide a feature (Note)."],
+        ["Columns that need a default", "Request-table columns that are NOT NULL with no default and that a new request doesn't fill. "
+         "With strict SQL mode every new request fails to save; without it, MySQL fills in a blank."],
+        ["Sizes", "The ILLiad API key column must hold an encrypted key; the request table's library-system columns must hold the "
+         "longest system code; an ILL email exactly as long as its column was probably cut off."],
+        ["Index on the ILL number", "Without it the request table is read in full for nearly every page."],
+        ["Character set and engine", "Tables in latin1 lose characters outside Western European languages; utf8mb4 keeps everything. "
+         "MyISAM tables aren't crash-safe; InnoDB is the MySQL default."],
+        ["Library data", "LOC codes used by more than one library, libraries without a LOC code, participating libraries with no ILL email, "
+         "and ILLiad mappings for a LOC code that isn't in the library table."],
+    ], [2.0, 4.5])
+    g.note("Character-set and engine changes rewrite the whole table. Back it up first and run them at a quiet time.", "warn")
 
     # 4.5
     g.h2("4.5 Search & Catalog")

@@ -18,7 +18,7 @@ def build(g):
         "and track it until it is returned.", color=MUTED)
     for _ in range(8):
         d.add_paragraph()
-    g.p("**Plugin version:** 3.12.0", color=MUTED)
+    g.p("**Plugin version:** 3.13.0", color=MUTED)
     g.p("**Guide date:** October 2026", color=MUTED)
     g.p("**Audience:** system administrators who install and host the service, the ILL coordinator who configures "
         "and runs it, and library staff who use it every day.", color=MUTED)
@@ -138,61 +138,16 @@ def build(g):
 CREATE USER 'ill_app'@'%' IDENTIFIED BY 'a-long-random-password';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE ON ill_data.* TO 'ill_app'@'%';
 FLUSH PRIVILEGES;""")
-    g.p("Then create the tables. The table names below are the defaults; they can be changed under "
-        "**ILL System → Database → Table Names** if yours differ. If you are moving from an older ILL system that "
-        "already has these tables, keep them: the plugin reads the same columns. The full column list is in Appendix A.")
-    g.code("""-- Requests: one row per request (the "Stats" table)
-CREATE TABLE `STATS` (
-  `index` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `illNUB` VARCHAR(40) NOT NULL DEFAULT '',
-  `Title` TEXT, `Author` TEXT, `pubdate` VARCHAR(50), `reqisbn` VARCHAR(100), `reqissn` VARCHAR(100),
-  `itype` VARCHAR(50), `Call Number` VARCHAR(255), `Location` VARCHAR(255), `Available` VARCHAR(100),
-  `article` TEXT, `needbydate` VARCHAR(50), `reqnote` TEXT, `patronnote` TEXT,
-  `Destination` VARCHAR(50), `DestSystem` VARCHAR(50),
-  `Requester lib` VARCHAR(255), `Requester LOC` VARCHAR(50), `ReqSystem` VARCHAR(50),
-  `Requester person` VARCHAR(255), `requesterEMAIL` VARCHAR(255), `requesterPhone` VARCHAR(50),
-  `saddress` VARCHAR(255), `saddress2` VARCHAR(255), `caddress` VARCHAR(255),
-  `Timestamp` DATETIME, `Fill` VARCHAR(2) DEFAULT '3', `emailsent` VARCHAR(2) DEFAULT '0',
-  `responderNOTE` TEXT, `ReasonNotFilled` VARCHAR(10), `fillNofillDate` DATE NULL,
-  `DueDate` VARCHAR(20), `shipMethod` VARCHAR(50),
-  `receiveTimeStamp` DATETIME NULL, `receiveAccount` VARCHAR(255) NULL, `receiveDate` DATE NULL,
-  `returnTimeStamp` DATETIME NULL, `returnAccount` VARCHAR(255) NULL, `returnDate` DATE NULL,
-  `returnMethod` VARCHAR(100), `returnNote` TEXT,
-  `checkinTimeStamp` DATETIME NULL, `checkinAccount` VARCHAR(255) NULL,
-  `renewTimeStamp` DATETIME NULL, `renewAccountRequester` VARCHAR(255) NULL, `renewNote` VARCHAR(255),
-  `renewAnswer` VARCHAR(2), `renewAccountLender` VARCHAR(255) NULL, `renewNoteLender` VARCHAR(255),
-  `IlliadTransID` VARCHAR(50), `IlliadStatus` VARCHAR(100),
-  PRIMARY KEY (`index`), KEY `illNUB` (`illNUB`), KEY `Destination` (`Destination`),
-  KEY `Requester LOC` (`Requester LOC`), KEY `Timestamp` (`Timestamp`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Library directory: one row per library
-CREATE TABLE `Library-Data` (
-  `recnum` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `Name` VARCHAR(255) NOT NULL, `loc` VARCHAR(50) NOT NULL, `alias` VARCHAR(255),
-  `system` VARCHAR(50), `ill_email` VARCHAR(500), `phone` VARCHAR(50), `oclc` VARCHAR(50),
-  `address1` VARCHAR(255), `address2` VARCHAR(255), `address3` VARCHAR(255),
-  `participant` TINYINT NOT NULL DEFAULT 1, `suspend` TINYINT NOT NULL DEFAULT 0,
-  `SuspendDateEnd` DATE NULL, `SuspendCheckDate` DATE NULL,
-  `book_loan` VARCHAR(3) DEFAULT 'Yes', `periodical_loan` VARCHAR(3) DEFAULT 'Yes', `av_loan` VARCHAR(3) DEFAULT 'Yes',
-  `ebook_request` VARCHAR(3) DEFAULT 'No', `ejournal_request` VARCHAR(3) DEFAULT 'No', `theses_loan` VARCHAR(3) DEFAULT 'No',
-  `Illiad` TINYINT NOT NULL DEFAULT 0, `IlliadURL` VARCHAR(255), `APIkey` VARCHAR(255), `IlliadDATE` INT NULL,
-  `ModifyDate` DATETIME NULL, `ModEmail` VARCHAR(255),
-  PRIMARY KEY (`recnum`), UNIQUE KEY `loc` (`loc`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ILLiad address mapping (only needed if a lender uses ILLiad)
-CREATE TABLE `ILLIAD-ADD-MAPPING` (
-  `num` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `LOC` VARCHAR(50) NOT NULL, `illiadID` VARCHAR(50) NOT NULL,
-  `illiadADDnumb` INT NOT NULL DEFAULT 0, `illiadLIBSymbol` VARCHAR(50),
-  PRIMARY KEY (`num`), KEY `pair` (`LOC`, `illiadID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;""")
-    g.note("Optional delivery columns (`lbsyscourier`, `lbUSPS` and a regional-courier column) and any loan column can be added "
-           "to the library table later. The library form only shows the questions whose columns exist, so you can leave out "
-           "the ones you don't use.", "tip")
-    g.note("The fallback table (`ILL-ROTA` by default) is created automatically the first time Automatic Fallback is "
-           "turned on. You don't need to create it by hand.")
+    g.p("You don't need to create the tables by hand. Once the plugin is connected (section 3.4), **ILL System → Database → "
+        "Run database check** lists the tables that are missing and **Create the missing tables** creates them, empty, under the "
+        "names set on that screen (defaults STATS, Library-Data, ILLIAD-ADD-MAPPING and ILL-ROTA). This is why the user needs "
+        "CREATE. The check also shows the exact CREATE TABLE statements, if you would rather run them yourself.")
+    g.p("If you are moving from an older ILL system that already has these tables, keep them: the plugin reads the same columns. "
+        "Run the database check after connecting; it lists any column that is missing or too small, with the SQL that fixes it. "
+        "The full column list is in Appendix A.")
+    g.note("Optional delivery columns (`lbsyscourier`, `lbUSPS` and a regional-courier column) and the `periodical_loan` column can be "
+           "added to the library table later. The library form only shows the questions whose columns exist, so you can leave out "
+           "the ones you don't use. The database check shows the SQL for each.", "tip")
 
     g.h2("3.2 Install WordPress")
     g.steps([
@@ -223,6 +178,8 @@ CREATE TABLE `ILLIAD-ADD-MAPPING` (
         "If the database is on another server, turn on **Require Encrypted Connection** and give the CA certificate path "
         "(see **MySQL TLS / SSL Encryption** on the same page).",
         "Open **ILL System → Dashboard**. It confirms the connection and shows counts.",
+        "Back on **ILL System → Database**, select **Run database check** (below the form). On a new install, select **Create the "
+        "missing tables**, then run the check again. Fix anything marked Problem before going further (section 4.4).",
     ])
     g.note("The database password is stored encrypted, using a key derived from WordPress's secret keys in wp-config.php. "
            "If you ever change those secret keys, re-enter the ILL database password on this screen.", "warn")
@@ -231,7 +188,7 @@ CREATE TABLE `ILLIAD-ADD-MAPPING` (
         "PHP files that WordPress loads from disk and that should never be requested directly. "
         "On Apache, the bundled `.htaccess` blocks them. Make sure `AllowOverride` permits it for the plugins directory. "
         "On nginx, add rules like these inside the server block:")
-    g.code("""location ~* /wp-content/plugins/[^/]+/(cron|docs|includes/lib)/ { return 404; }
+    g.code("""location ~* /wp-content/plugins/[^/]+/(cron|docs|tests|includes/lib)/ { return 404; }
 location ~* /wp-content/plugins/[^/]+/.*\\.(md|txt|inc|log|sh|json|bak)$ { deny all; }
 location ~* /wp-content/plugins/seal-ill-system/.*\\.(php|phtml|phar)$ { deny all; }""")
     g.p("Test it: requesting the plugin's README.md file, or any of its .php files, in a browser should give 403 or 404. Behind a CDN, "

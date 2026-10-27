@@ -608,7 +608,7 @@ class SEAL_Admin {
     /** ILL → Import Users (SEAL_Import_Users). */
     public static function render_import(): void { SEAL_Import_Users::render_page(); }
     /** Settings screen: prints the Database tab (fields registered in reg_database()) through tab(). */
-    public static function render_database(): void { self::tab('database','🗄️ Database &amp; Tables','Save Database','DB credentials are stored encrypted in <code>wp_options</code> (libsodium AEAD or AES-256-GCM keyed from your WordPress secret keys).','warning', [ 'SEAL_Admin', 'render_illiad_keys' ]); }
+    public static function render_database(): void { self::tab('database','🗄️ Database &amp; Tables','Save Database','DB credentials are stored encrypted in <code>wp_options</code> (libsodium AEAD or AES-256-GCM keyed from your WordPress secret keys).','warning', static function () { self::render_illiad_keys(); self::render_db_check(); } ); }
 
     /**
      * Below the Database form: the state of the ILLiad API keys (SEAL_Secret) — encryption key present, how many keys are
@@ -652,6 +652,73 @@ class SEAL_Admin {
             echo '<input type="hidden" name="action" value="seal_encrypt_illiad_keys"><button class="button button-primary">Encrypt ' . (int) $c['plain'] . ' plain-text key' . ( $c['plain'] === 1 ? '' : 's' ) . '</button> '
                . '<span class="description">Add <code>$illDataKey</code> to ill_db.inc first, so the scheduled ILLiad checks can still read them.</span></form>';
         }
+    }
+
+    /**
+     * Below the ILLiad keys: the Database check (SEAL_DB_Schema). Runs on request (it reads table structure and counts a few
+     * things in the library table), lists each finding with the SQL that fixes it, and offers to create tables that don't exist.
+     * Nothing else is changed: ALTERs are for an administrator to run, after a backup.
+     */
+    public static function render_db_check(): void {
+        if ( ! current_user_can( 'manage_options' ) ) { return; }
+        $url = add_query_arg( [ 'page' => self::PAGES['database'], 'seal_dbcheck' => 1 ], admin_url( 'admin.php' ) ) . '#db-check';
+        echo '<h2 id="db-check">Database check</h2><p style="max-width:740px">Checks that the ILL database has the tables and columns this version uses, '
+           . 'with sizes and settings that work on any MySQL server, and looks for a few data problems (duplicate LOC codes, libraries with no ILL email). '
+           . 'It only reads. Each problem comes with the SQL that fixes it; run that yourself, after a backup. Run it after setting up a new site, '
+           . 'after moving the database, and after upgrading the plugin.</p>';
+        if ( isset( $_GET['seal_created'] ) ) {
+            $c = sanitize_text_field( wp_unslash( $_GET['seal_created'] ) ); $x = sanitize_text_field( wp_unslash( $_GET['seal_failed'] ?? '' ) );
+            echo '<div class="notice notice-' . ( $x === '' ? 'success' : 'error' ) . ' inline"><p>' . ( $c !== '' ? 'Created: ' . esc_html( $c ) . '. ' : 'No table was created. ' )
+               . ( $x !== '' ? 'Could not create: ' . esc_html( $x ) . '.' : '' ) . '</p></div>';
+        }
+        if ( empty( $_GET['seal_dbcheck'] ) ) {
+            echo '<p><a class="button button-primary" href="' . esc_url( $url ) . '">Run database check</a></p>';
+            return;
+        }
+        $found  = SEAL_DB_Schema::check();
+        $counts = array_count_values( array_column( $found, 'level' ) ) + [ 'fail' => 0, 'warn' => 0, 'info' => 0, 'ok' => 0 ];
+        $icon   = [ 'ok' => [ '&#10004;', '#0a5c2e', 'OK' ], 'info' => [ '&#9432;', '#1d4f91', 'Note' ], 'warn' => [ '&#9888;', '#7a4b00', 'Warning' ], 'fail' => [ '&#10006;', '#8a1f1f', 'Problem' ] ];
+        $sum    = $counts['fail'] ? $counts['fail'] . ' problem' . ( $counts['fail'] === 1 ? '' : 's' ) . ' to fix' : 'No problems';
+        $sum   .= $counts['warn'] ? ', ' . $counts['warn'] . ' warning' . ( $counts['warn'] === 1 ? '' : 's' ) : '';
+        echo '<p role="status"><strong>' . esc_html( $sum ) . '.</strong> Checked ' . esc_html( wp_date( 'M j, Y g:i a' ) ) . '. <a href="' . esc_url( $url ) . '">Check again</a></p>';
+        echo '<table class="widefat striped" style="max-width:1000px"><thead><tr><th scope="col" style="width:90px">Result</th><th scope="col">Finding</th></tr></thead><tbody>';
+        $creatable = false;
+        foreach ( $found as $i => $x ) {
+            [ $sym, $color, $word ] = $icon[ $x['level'] ];
+            echo '<tr><td style="color:' . $color . ';font-weight:600;white-space:nowrap"><span aria-hidden="true">' . $sym . '</span> ' . esc_html( $word ) . '</td><td>'
+               . '<strong>' . esc_html( $x['title'] ) . '</strong>' . ( $x['detail'] !== '' ? '<br>' . esc_html( $x['detail'] ) : '' )
+               . ( $x['hint'] !== '' ? '<br><em>' . esc_html( $x['hint'] ) . '</em>' : '' );
+            if ( $x['sql'] !== '' ) {
+                $id = 'seal-sql-' . $i;
+                echo '<details style="margin-top:6px"><summary>SQL</summary><label for="' . esc_attr( $id ) . '" class="screen-reader-text">SQL for: ' . esc_html( $x['title'] ) . '</label>'
+                   . '<textarea id="' . esc_attr( $id ) . '" readonly rows="' . min( 14, substr_count( $x['sql'], "\n" ) + 2 ) . '" class="large-text code" spellcheck="false">' . esc_textarea( $x['sql'] ) . '</textarea></details>';
+            }
+            echo '</td></tr>';
+            if ( str_starts_with( $x['sql'], 'CREATE TABLE' ) ) { $creatable = true; }
+        }
+        echo '</tbody></table>';
+        if ( $creatable ) {
+            echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-top:12px">';
+            wp_nonce_field( 'seal_create_ill_tables' );
+            echo '<input type="hidden" name="action" value="seal_create_ill_tables"><button class="button">Create the missing tables</button> '
+               . '<span class="description">Creates empty tables under the names set above. Tables that exist are never changed.</span></form>';
+        }
+    }
+
+    /** Create the ILL tables that don't exist (button above). Administrators only; recorded in Change History. */
+    public static function handle_create_tables(): void {
+        if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Not allowed.', '', [ 'response' => 403 ] ); }
+        check_admin_referer( 'seal_create_ill_tables' );
+        try {
+            $r = SEAL_DB_Schema::create_missing();
+        } catch ( \Throwable $e ) {
+            $r = [ 'created' => [], 'failed' => [ $e->getMessage() ] ];
+        }
+        if ( class_exists( 'SEAL_Audit' ) && ( $r['created'] || $r['failed'] ) ) {
+            SEAL_Audit::event( 'security', 'ILL database tables', ( $r['created'] ? 'Created ' . implode( ', ', $r['created'] ) : 'Nothing created' ) . ( $r['failed'] ? '; failed: ' . implode( ', ', $r['failed'] ) : '' ) );
+        }
+        wp_safe_redirect( add_query_arg( [ 'page' => self::PAGES['database'], 'seal_dbcheck' => 1, 'seal_created' => implode( ', ', $r['created'] ), 'seal_failed' => implode( ', ', $r['failed'] ) ], admin_url( 'admin.php' ) ) . '#db-check' );
+        exit;
     }
 
     /** Encrypt every plain-text ILLiad key (button above). Administrators only; recorded in Change History. */

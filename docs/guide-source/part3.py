@@ -37,14 +37,18 @@ php stats_weekly.php
 php check_illiad.php
 tail -50 /var/log/ill_cron.log""")
 
-    g.h2("5.3 cron_config.php")
-    g.p("Every organization-specific value the scripts use is in this one file. Change these before the first run:")
+    g.h2("5.3 cron_local.php")
+    g.p("`cron_config.php` holds every setting with a placeholder default and is the same for every organization. Put your own values "
+        "in `cron_local.php` next to it: copy `cron_local.php.example`, then set at least the From address, NOC address, statistics "
+        "recipients and site address. Anything you don't set keeps the default. `cron_local.php` is yours: plugin updates don't "
+        "include it, so it is never overwritten.")
     g.table(["Setting", "What it is"], [
-        ["date_default_timezone_set(...)", "Your time zone (e.g. America/Chicago). Business days are counted in local calendar dates."],
+        ["ILL_TIMEZONE", "Your time zone (e.g. America/Chicago). Business days are counted in local calendar dates. Default America/New_York."],
         ["ILL_LOG_FILE", "Log file every script appends to. Default /var/log/ill_cron.log."],
         ["ILL_FROM_NAME / ILL_FROM_EMAIL", "The From name and address on script email."],
         ["ILL_ENVELOPE_FROM", "Envelope sender (bounce address). Leave empty unless your relay requires one."],
         ["ILL_NOC_EMAIL", "Where script failures are reported (database errors, a reminder that could not be sent)."],
+        ["ILL_ALERT_PREFIX", "Start of the subject line of those failure emails. Default ILL ALERT."],
         ["ILL_STATS_TO", "Recipients of the weekly statistics, separated by commas."],
         ["ILL_OFFICE_EMAIL", "Optional copy of every expiry notice to the ILL office. Empty = off."],
         ["ILL_BASE_URL", "The site's address, used for the Yes / No and other links in emails."],
@@ -88,7 +92,8 @@ $illDataKey = 'base64-of-32-random-bytes';""")
     g.p("With `$dbSslCa` set, every job connects to both databases with TLS and checks the server's certificate, the same as the "
         "plugin's **Require Encrypted Connection** with a CA path. If the file is missing the jobs refuse to connect (and say so in the "
         "log) rather than connect unencrypted. Leave it out for a database on the same machine. To check, run "
-        "`php cron_config.php --check-db` in the scripts folder: it shows whether each connection is encrypted and changes nothing.")
+        "`php cron_config.php --check-db` in the scripts folder: it shows whether each connection is encrypted, whether the ILLiad keys "
+        "can be read, and whether each table has the columns the scripts use. It changes nothing.")
     g.note("If the WordPress login is missing or wrong, the jobs still run, but they ignore Closure Dates and Email test mode, "
            "and use default branding. The log says which login is missing. On any test server, check this file first: "
            "without it, test-mode settings are not honoured and real email can go out.", "warn")

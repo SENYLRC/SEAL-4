@@ -33,7 +33,7 @@ COMMON=( -rltz --itemize-changes $MODE --perms --chmod=D755,F644
 
 echo "== Plugin -> $HOST:$PLUGIN_DEST"
 rsync "${COMMON[@]}" \
-  --exclude='/docs/' --exclude='/deploy/' --exclude='/file-history/' --exclude='/cron/' --exclude='/venv/' \
+  --exclude='/docs/' --exclude='/deploy/' --exclude='/tests/' --exclude='/file-history/' --exclude='/cron/' --exclude='/venv/' \
   "$SRC/" "$HOST:$PLUGIN_DEST"
 
 echo
