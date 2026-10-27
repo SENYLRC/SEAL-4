@@ -18,7 +18,7 @@ def build(g):
         "and track it until it is returned.", color=MUTED)
     for _ in range(8):
         d.add_paragraph()
-    g.p("**Plugin version:** 3.13.0", color=MUTED)
+    g.p("**Plugin version:** 3.13.1", color=MUTED)
     g.p("**Guide date:** October 2026", color=MUTED)
     g.p("**Audience:** system administrators who install and host the service, the ILL coordinator who configures "
         "and runs it, and library staff who use it every day.", color=MUTED)
@@ -163,7 +163,7 @@ FLUSH PRIVILEGES;""")
     g.h2("3.3 Install the plugin")
     g.steps([
         "Upload the plugin folder to `wp-content/plugins/` (or use **Plugins → Add New → Upload Plugin** with the zip file).",
-        "Activate it under **Plugins**. Activation creates the Library Staff, Library System Staff and ILL Administrator roles.",
+        "Activate it under **Plugins**. Activation creates the Library Staff, Library System Staff and ILL Administrator roles, and gives you (the person activating it) the ILL Administrator role as well; you stay an Administrator.",
         "Go to **Settings → Permalinks** and click **Save** once more. This registers the ILL page addresses (/request, /respond, ...).",
         "A new **ILL System** menu appears in the WordPress dashboard. (Once you set the System Short Name it is labelled with that name.)",
         "If you are replacing older separate plugins that did the same jobs (custom user fields, login redirect, terms of service, "

@@ -3,7 +3,7 @@
  * Plugin Name:       Southeastern ILL System
  * Plugin URI:        https://github.com/SENYLRC/SEAL-4
  * Description:       Complete Interlibrary Loan management system. Includes the ILL request workflow, lender response, renewals, statistics, user profile fields, login redirect, Terms of Service gate, catalog search header, dashboard quick links, and user CSV export — all in one plugin, fully configurable for any region without code changes.
- * Version:           3.13.0
+ * Version:           3.13.1
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Zachary Spalding (SENYLRC) & Claude (Anthropic)
@@ -19,7 +19,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'SEAL_ILL_VERSION',    '3.13.0' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
+define( 'SEAL_ILL_VERSION',    '3.13.1' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
 define( 'SEAL_ILL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEAL_ILL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -383,6 +383,9 @@ add_action( 'admin_init',  [ 'SEAL_Security_Admin', 'init' ] );
 // ─── Activation / Deactivation ────────────────────────────────────────────────
 register_activation_hook( __FILE__, function () {
     SEAL_Roles::create_roles();
+    // The person activating the plugin also becomes an ILL Administrator (an extra role; they keep Administrator)
+    $u = wp_get_current_user();
+    if ( $u->exists() && ! in_array( 'illadmin', (array) $u->roles, true ) ) { $u->add_role( 'illadmin' ); }
     update_option( 'seal_ill_flush_rewrite', 1 );
 } );
 

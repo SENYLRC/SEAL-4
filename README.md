@@ -1,6 +1,6 @@
 # ILL System — WordPress Plugin
 
-**Version:** 3.13.0  
+**Version:** 3.13.1  
 **Author:** SENYLRC Systems Department  
 **Source:** https://github.com/SENYLRC/SEAL-4 (successor to [SEAL-3](https://github.com/SENYLRC/SEAL-3))  
 
@@ -44,14 +44,16 @@ All settings live in the **ILL → Settings** menu. Nothing is stored in flat `.
 
 ## User Roles
 
-The plugin creates two custom WordPress roles on activation:
+The plugin creates three custom WordPress roles on activation:
 
 | Role | Display Name | Description |
 |------|-------------|-------------|
 | `libstaff` | Library Staff | Submit/manage own ILL requests, respond as lender |
 | `libsys` | Library System Staff | All libstaff capabilities + system-wide views + edit libraries in own system |
+| `illadmin` | ILL Administrator | Every ILL Admin page and user-account management, without WordPress site administration |
 
-Administrators inherit all capabilities automatically.
+Administrators inherit all capabilities automatically. The user who activates the plugin is also given the ILL
+Administrator role (as an extra role; they stay an Administrator).
 
 ---
 
