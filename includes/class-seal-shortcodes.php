@@ -61,6 +61,13 @@ class SEAL_Shortcodes {
             return '<p>' . esc_html__( 'Access Denied.', 'seal-ill' ) . '</p>';
         }
 
+        // The two-factor gate lets ordinary WordPress pages through, so an embedded ILL page checks set-up itself.
+        if ( $page !== 'illuser' && class_exists( 'SEAL_Module_2FA' ) && SEAL_Module_2FA::needs_setup( wp_get_current_user() ) ) {
+            return '<p>' . esc_html__( 'Your role requires two-factor authentication.', 'seal-ill' ) . ' <a href="'
+                . esc_url( add_query_arg( 'seal_2fa', 'setup', home_url( '/illuser' ) ) ) . '">'
+                . esc_html__( 'Set it up on My Profile', 'seal-ill' ) . '</a> ' . esc_html__( 'first.', 'seal-ill' ) . '</p>';
+        }
+
         try {
             SEAL_DB::get();
         } catch ( RuntimeException $e ) {

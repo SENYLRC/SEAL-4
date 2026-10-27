@@ -260,6 +260,12 @@ class SEAL_Router {
             SEAL_Roles::require_cap( $cap );
         }
 
+        // ── Two-factor set-up ────────────────────────────────────────────────
+        // Here, not only on template_redirect: stand-alone routes (pull slips) print and exit before that.
+        if ( class_exists( 'SEAL_Module_2FA' ) && SEAL_Module_2FA::active() ) {
+            SEAL_Module_2FA::gate();
+        }
+
         // ── DB connection ────────────────────────────────────────────────────
         try {
             SEAL_DB::get();

@@ -23,8 +23,8 @@
  * working even if the WordPress secret keys are rotated. Key records hold only public keys. Administrators can
  * reset a user's two-factor (keys, app and codes) from that user's WordPress profile.
  *
- * Note: XML-RPC and application passwords do not go through this screen (the plugin switches application
- * passwords off; Login Protection can disable XML-RPC).
+ * XML-RPC and application passwords would sign in with the password alone, so while this module is on it turns
+ * both off itself (whatever the Login Protection and Registration Fields settings say).
  */
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
@@ -41,6 +41,9 @@ class SEAL_Module_2FA {
     const MAX_TRIES = 5;
     const THROTTLE_MAX    = 10;   // wrong codes allowed per user…
     const THROTTLE_WINDOW = 900;  // …within this many seconds
+
+    /** admin-ajax calls a user who still has to set up two-factor may make: adding a security key. */
+    const SETUP_AJAX = [ 'seal_2fa_key_options', 'seal_2fa_key_add' ];
 
     /** Session token issued during this request's password step, captured so it can be destroyed. */
     private static string $captured_token = '';
@@ -70,6 +73,24 @@ class SEAL_Module_2FA {
         add_action( 'show_user_profile',           [ __CLASS__, 'profile_section' ] );
         add_action( 'edit_user_profile',           [ __CLASS__, 'profile_section' ] );
         add_action( 'edit_user_profile_update',    [ __CLASS__, 'profile_admin_reset' ] );
+
+        // Sign-ins that never reach the second step: XML-RPC (wp_authenticate without wp_login) and application passwords.
+        add_filter( 'xmlrpc_enabled',                        '__return_false' );
+        add_filter( 'wp_is_application_passwords_available', '__return_false' );
+        add_filter( 'authenticate',                          [ __CLASS__, 'no_xmlrpc_login' ], 100 );
+    }
+
+    /** Refuses any password sign-in made through XML-RPC (backstop in case something turns XML-RPC back on). */
+    public static function no_xmlrpc_login( $user ) {
+        if ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST && $user instanceof WP_User ) {
+            return new WP_Error( 'seal_2fa_xmlrpc', __( 'Sign-in through XML-RPC is turned off on this site.', 'seal-ill' ) );
+        }
+        return $user;
+    }
+
+    /** True when two-factor is on, the user's role requires it and they haven't set up a method yet. */
+    public static function needs_setup( WP_User $user ): bool {
+        return self::active() && $user->exists() && self::role_required( $user ) && ! self::is_enrolled( $user->ID );
     }
 
     // ── State ─────────────────────────────────────────────────────────────────
@@ -473,16 +494,22 @@ class SEAL_Module_2FA {
 
     /**
      * Sends users whose role requires two-factor, and who haven't set it up yet, to My Profile until they do.
-     * Only ILL pages and wp-admin are gated; public pages and My Profile itself stay reachable.
+     * Only ILL pages and wp-admin are gated; public pages and My Profile itself stay reachable. admin-post and
+     * admin-ajax actions (exports, imports…) are refused, except the calls that add a security key. Also called by
+     * SEAL_Router before any ILL route, so stand-alone pages (pull slips) are covered too.
      */
     public static function gate(): void {
-        if ( ! is_user_logged_in() || wp_doing_ajax() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) { return; }
+        if ( ! is_user_logged_in() || wp_doing_cron() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) { return; }
 
         $user = wp_get_current_user();
-        if ( ! self::role_required( $user ) || self::is_enrolled( $user->ID ) ) { return; }
+        if ( ! self::needs_setup( $user ) ) { return; }
 
         global $pagenow;
-        if ( in_array( $pagenow, [ 'admin-post.php', 'admin-ajax.php' ], true ) ) { return; }
+        if ( wp_doing_ajax() || $pagenow === 'admin-post.php' ) {
+            $action = sanitize_key( wp_unslash( $_REQUEST['action'] ?? '' ) );
+            if ( wp_doing_ajax() && in_array( $action, self::SETUP_AJAX, true ) ) { return; }
+            wp_die( esc_html__( 'Set up two-factor authentication on My Profile first.', 'seal-ill' ), '', [ 'response' => 403 ] );
+        }
 
         // Only ILL pages and wp-admin are gated; public pages stay browsable.
         $route = (string) get_query_var( 'seal_page' );
@@ -510,8 +537,12 @@ class SEAL_Module_2FA {
             return [ 'Too many failed attempts. Please wait 15 minutes and try again.', 'error', [] ];
         }
 
-        // Add the authenticator app (on its own, or next to security keys).
+        // Add the authenticator app (on its own, or next to security keys). The current password comes first, as for a
+        // key: a code from the new app only proves who is holding this session, not whose account it is.
         if ( $do === 'enable' && ! self::app_on( $uid ) ) {
+            if ( ! self::password_ok( $user, $pass ) ) {
+                return [ 'Your current password is not correct.', 'error', [] ];
+            }
             $pending = self::secret( $uid, self::M_PENDING );
             $step    = null;
             if ( $pending !== '' && SEAL_TOTP::verify( $pending, $code, 0, $step ) ) {
@@ -738,6 +769,10 @@ class SEAL_Module_2FA {
                                 <label for="seal_2fa_code_e"><strong>2.</strong> Enter the 6-digit code the app shows</label>
                                 <div class="seal-2fa-inline">
                                     <input type="text" id="seal_2fa_code_e" name="seal_2fa_code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" class="seal-2fa-code" required>
+                                </div>
+                                <label for="seal_2fa_password_e"><strong>3.</strong> Your current password</label>
+                                <div class="seal-2fa-inline">
+                                    <input type="password" id="seal_2fa_password_e" name="seal_2fa_password" autocomplete="current-password" required>
                                     <button type="submit" name="seal_2fa_action" value="enable" class="btn-primary">Verify and turn on</button>
                                 </div>
                             </form>

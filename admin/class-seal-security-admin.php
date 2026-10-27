@@ -174,7 +174,7 @@ JS
             'desc'    => 'Only choose one if the site sits behind a proxy or CDN you control. Anyone can forge these headers on a directly reachable server.',
         ] );
         self::section( 'protection', 'sec_lp_misc', 'Other' );
-        self::f( 'protection', 'sec_lp_misc', 'seal_lp_disable_xmlrpc', 'Disable XML-RPC', 'toggle', [ 'desc' => 'Recommended. XML-RPC is a common brute-force target and bypasses two-factor.' ] );
+        self::f( 'protection', 'sec_lp_misc', 'seal_lp_disable_xmlrpc', 'Disable XML-RPC', 'toggle', [ 'desc' => 'Recommended. XML-RPC is a common brute-force target. (While Two-Factor is on, XML-RPC sign-in is always off.)' ] );
 
         // Passwords
         self::reg( 'passwords', [

@@ -210,3 +210,12 @@ project's reviewed design. Design notes relevant to review:
 - **Account lists**: Security column (password rating, two-factor) and History only for accounts the viewer can manage; Approve / Deny with per-account nonces and the same permission rules as editing.
 - **anonymize.php**: CLI only, no user input in SQL, `--dry-run`; irreversible (back up first).
 - `.htaccess` also hides `includes/lib/`.
+
+## v3.14.0: two-factor enforcement
+
+- **Password-only channels:** while Two-Factor is on, the module itself turns off XML-RPC (`xmlrpc_enabled`) and application passwords, and an
+  `authenticate` filter refuses any XML-RPC password sign-in, whatever the Login Protection and Registration Fields settings say.
+- **Set-up gate:** for roles that require two-factor and haven't set it up, the gate runs before every ILL route (stand-alone pull slips included),
+  refuses admin-post and admin-ajax actions except the two security-key setup calls, and shortcode-embedded ILL pages check it too.
+- **Adding an authenticator app** needs the current password, like adding a key (a code from the new app only proves possession of the session).
+- Stub test: `tests/test-2fa-hardening.php`.
