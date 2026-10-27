@@ -18,7 +18,7 @@ def build(g):
         "and track it until it is returned.", color=MUTED)
     for _ in range(8):
         d.add_paragraph()
-    g.p("**Plugin version:** 3.13.2", color=MUTED)
+    g.p("**Plugin version:** 3.13.3", color=MUTED)
     g.p("**Guide date:** October 2026", color=MUTED)
     g.p("**Audience:** system administrators who install and host the service, the ILL coordinator who configures "
         "and runs it, and library staff who use it every day.", color=MUTED)

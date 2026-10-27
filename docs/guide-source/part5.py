@@ -216,7 +216,7 @@ def build(g):
         ["ill_email, phone, oclc, address1–3", "Contact details. ill_email may hold several addresses."],
         ["participant, suspend, SuspendDateEnd, SuspendCheckDate", "Whether it takes part; suspension and its end date; when the suspension job last checked it."],
         ["book_loan, periodical_loan, av_loan, ebook_request, ejournal_request, theses_loan", "Yes / No: item types it lends."],
-        ["Delivery columns (optional)", "Yes / No: delivery methods it accepts."],
+        ["Delivery columns (optional)", "Yes / No: delivery methods it accepts; shown on Library Profile, the library list and the ILL Directory."],
         ["Illiad, IlliadURL, APIkey, IlliadDATE", "ILLiad: in use, web platform address, API key, default loan days."],
         ["ModifyDate, ModEmail", "When the record was last changed, and by whom."],
     ], [3.2, 3.3])

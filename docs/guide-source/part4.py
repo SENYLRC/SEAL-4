@@ -102,7 +102,8 @@ def build(g):
         "address and OCLC symbol up to date.",
         "**Suspend** the library while it can't lend (closures, inventory): tick Suspended and give a **Suspend Until** date. Borrowers see "
         "the library greyed out. The suspension ends automatically after that date (check_suspend.php). A suspension with no end date stays until it is removed.",
-        "**Directory of Participating Libraries**: public list of libraries. Phone numbers and email addresses are shown only to logged-in users.",
+        "**Directory of Participating Libraries**: public list of libraries. Phone numbers and email addresses are shown only to logged-in users. "
+        "When the library table has the optional delivery columns, each library also shows the delivery methods it set on its Library Profile.",
         "**View Library Accounts**: the staff accounts registered for your library.",
     ])
     g.h2("6.6 Statistics")

@@ -10,6 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 
 class SEAL_Page_illdir extends SEAL_Page_Base {
 
+    /** Optional delivery columns in the library table (set on Library Profile); shown when the table has any of them. */
+    private const DELIVERY = [
+        'lbsyscourier' => 'Library System Courier',
+        'lbUSPS'       => 'US Mail (USPS)',
+        'lbEmpire'     => 'Empire Library Delivery',
+    ];
+
     /**
      * Entry point: SEAL_Router calls this to print the page into the theme's content area. The public directory
      * of participating libraries, filterable by library system; contact details only for logged-in users.
@@ -24,6 +31,7 @@ class SEAL_Page_illdir extends SEAL_Page_Base {
         $pagenum   = max( 0, $this->req_int( 'pagenum', 0 ) );
         $offset    = $pagenum * $rec_limit;
         $logged_in = is_user_logged_in();
+        $delivery  = array_filter( self::DELIVERY, static fn( $col ) => SEAL_DB::has_column( $lib_tbl, $col ), ARRAY_FILTER_USE_KEY );
 
         $base = "SELECT * FROM `{$lib_tbl}` WHERE `participant`='1'";
         if ( $libname !== '' ) { $base .= " AND `Name` LIKE '%" . SEAL_DB::esc( $libname ) . "%'"; }
@@ -74,6 +82,8 @@ class SEAL_Page_illdir extends SEAL_Page_Base {
                 $accepting = ( ( $r['suspend'] ?? '' ) == '0' ) ? 'Yes' : 'No';
                 $email_raw = (string) ( $r['ill_email'] ?? '' );
                 $mailto    = preg_replace( '/\s+/', '', str_replace( ';', ',', $email_raw ) );
+                $ways      = [];
+                foreach ( $delivery as $col => $label ) { if ( strcasecmp( (string) ( $r[ $col ] ?? '' ), 'Yes' ) === 0 ) { $ways[] = $label; } }
             ?>
             <div class="illDirCard">
                 <h4 id="<?php echo esc_attr( $title_id ); ?>"><?php echo esc_html( $r['Name'] ?? '' ); ?></h4>
@@ -82,6 +92,9 @@ class SEAL_Page_illdir extends SEAL_Page_Base {
                 <p><strong>Phone:</strong> <?php echo esc_html( $r['phone'] ?? '' ); ?></p>
                 <?php endif; ?>
                 <p><strong>Library System:</strong> <?php echo esc_html( SEAL_Functions::system_name( $r['system'] ?? '' ) ); ?></p>
+                <?php if ( $delivery ): ?>
+                <p><strong>Delivery:</strong> <?php echo $ways ? esc_html( implode( ', ', $ways ) ) : '<em>Not given</em>'; ?></p>
+                <?php endif; ?>
                 <?php if ( $logged_in && $email_raw !== '' ): ?>
                 <p><strong>ILL Email(s):</strong> <a href="mailto:<?php echo esc_attr( $mailto ); ?>"><?php echo esc_html( $email_raw ); ?></a></p>
                 <?php endif; ?>
