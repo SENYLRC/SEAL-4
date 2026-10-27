@@ -119,7 +119,7 @@ if ($expireMonths > 0) {
                 CASE WHEN COALESCE(s.`responderNOTE`, '') = '' THEN '' ELSE ' | ' END,
                 'Expired automatically ($expireMonths months)'
             ),
-            s.`fillNofillDate` = COALESCE(s.`fillNofillDate`, NOW())
+            s.`fillNofillDate` = IF(YEAR(s.`fillNofillDate`) > 0, s.`fillNofillDate`, NOW())   -- NULL or an old zero date: today
         WHERE $where
     ");
 } else {
@@ -132,7 +132,7 @@ if ($expireMonths > 0) {
 // ======================================================================
 if ($noteDays > 0) {
     $cut   = date('Y-m-d', strtotime("-$noteDays days"));
-    $where = "$isExpired AND COALESCE(DATE(s.`fillNofillDate`), DATE(s.`Timestamp`)) < '$cut' AND COALESCE(s.`reqNOTE`, '') <> ''";
+    $where = "$isExpired AND IF(YEAR(s.`fillNofillDate`) > 0, DATE(s.`fillNofillDate`), DATE(s.`Timestamp`)) < '$cut' AND COALESCE(s.`reqNOTE`, '') <> ''";
     $found = $count("SELECT COUNT(*) AS total FROM `$illSTAT` s WHERE $where");
     $log("Step 2: $found expired requests older than $cut ($noteDays days) with a request note to clear");
     $run('Clear expired request notes', $found, "UPDATE `$illSTAT` s SET s.`reqNOTE` = '' WHERE $where");

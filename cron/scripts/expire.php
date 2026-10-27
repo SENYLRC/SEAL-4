@@ -146,7 +146,7 @@ function ill_rota_advance_on_timeout(mysqli $db, string $illSTAT, string $illLIB
             `Call Number`='" . mysqli_real_escape_string($db, (string)($next['call'] ?? '')) . "',
             `Location`='" . mysqli_real_escape_string($db, (string)($next['alias'] ?? '')) . "',
             `Available`='" . mysqli_real_escape_string($db, (string)($next['avail'] ?? '')) . "',
-            `Fill`='3', `emailsent`='0', `responderNOTE`='', `DueDate`='', `ReasonNotFilled`='',
+            `Fill`='3', `emailsent`='0', `responderNOTE`='', `DueDate`='', `ReasonNotFilled`='0',
             `IlliadTransID`='', `IlliadStatus`=''
          WHERE `illNUB`='" . mysqli_real_escape_string($db, $illnum) . "'"
     );

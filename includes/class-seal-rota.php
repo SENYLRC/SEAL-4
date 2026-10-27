@@ -258,7 +258,7 @@ class SEAL_Rota {
         );
         SEAL_DB::query(
             "UPDATE %t SET `Destination`=%s, `DestSystem`=%s, `Call Number`=%s, `Location`=%s, `Available`=%s,
-             `Fill`='3', `emailsent`='0', `responderNOTE`='', `DueDate`='', `ReasonNotFilled`='',
+             `Fill`='3', `emailsent`='0', `responderNOTE`='', `DueDate`='', `ReasonNotFilled`='0',
              `IlliadTransID`='', `IlliadStatus`='' WHERE `illNUB`=%s",
             SEAL_DB::$sealSTAT, $next['loc'], $next['system'], $next['call'], $next['alias'], $next['avail'], $illNUB
         );

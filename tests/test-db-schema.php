@@ -81,11 +81,14 @@ if ( $dump !== '' ) {
     foreach ( SEAL_DB_Schema::TABLES as $k => $spec ) { $info['tables'][ $k ] = $live[ seal_config( $spec['config'] ) ] ?? [ 'name' => seal_config( $spec['config'] ), 'exists' => false ]; }
     $f = SEAL_DB_Schema::analyze( $info );
     t( 'no required column missing', ! find( $f, 'fail', 'required column' ), json_encode( find( $f, 'fail', 'required column' ) ) );
-    $x = find( $f, 'warn', 'need a default' );
-    t( 'non-strict: the six request columns need a default (warn)', $x && preg_match_all( '/fillNofillDate|returnNote|checkinTimeStamp|shipMethod|IlliadStatus|IlliadTransID/', $x['detail'] ) === 6, json_encode( $x ) );
+    $x = find( $f, 'warn', 'a default' );
+    t( 'non-strict: fillNofillDate needs a default (warn); the request INSERT fills the other five', $x && str_contains( $x['title'], '1 column needs' )
+        && str_contains( $x['detail'], 'fillNofillDate' ) && ! preg_match( '/returnNote|checkinTimeStamp|shipMethod|IlliadStatus|IlliadTransID/', $x['detail'] ), json_encode( $x ) );
+    t( 'fix turns old zero dates into NULL, outside strict mode', $x && str_contains( $x['sql'], "SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION'" )
+        && str_contains( $x['sql'], 'SET `fillNofillDate` = NULL WHERE YEAR(`fillNofillDate`) = 0' ) );
     t( 'fix makes fillNofillDate a nullable DATE', $x && str_contains( $x['sql'], 'MODIFY `fillNofillDate` DATE NULL DEFAULT NULL' ) );
     $info['server']['sql_mode'] = 'STRICT_TRANS_TABLES';
-    t( 'strict: the same finding is a fail', (bool) find( SEAL_DB_Schema::analyze( $info ), 'fail', 'need a default' ) );
+    t( 'strict: the same finding is a fail', (bool) find( SEAL_DB_Schema::analyze( $info ), 'fail', 'a default' ) );
     $info['server']['sql_mode'] = 'NO_ENGINE_SUBSTITUTION';
     t( 'no index on illNUB: warn', (bool) find( $f, 'warn', 'no index on illNUB' ) );
     t( 'requests table latin1: warn with CONVERT', ( $x = find( $f, 'warn', 'Requests (statistics) table: character set latin1' ) ) && str_contains( $x['sql'], 'CONVERT TO CHARACTER SET utf8mb4' ) );

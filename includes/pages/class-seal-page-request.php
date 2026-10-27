@@ -227,12 +227,12 @@ class SEAL_Page_Request extends SEAL_Page_Base {
                         </div>
                         <div class="form-group">
                             <label for="patronnote">Patron name or barcode <span class="seal-optional">(optional)</span></label>
-                            <input type="text" id="patronnote" name="patronnote" aria-describedby="patron-help">
+                            <input type="text" id="patronnote" name="patronnote" maxlength="255" aria-describedby="patron-help">
                             <span class="helper" id="patron-help">Please follow your local policies regarding patron privacy.</span>
                         </div>
                         <div class="form-group seal-req-wide">
                             <label for="reqnote">Note</label>
-                            <input type="text" id="reqnote" name="reqnote">
+                            <input type="text" id="reqnote" name="reqnote" maxlength="255">
                         </div>
 
                         <div class="seal-req-wide seal-req-article">
@@ -619,6 +619,8 @@ class SEAL_Page_Request extends SEAL_Page_Base {
         $needbydate= sanitize_text_field( wp_unslash( $_POST['needbydate']?? '' ) );
         $reqnote   = sanitize_text_field( wp_unslash( $_POST['reqnote']   ?? '' ) );
         $patronnote= sanitize_text_field( wp_unslash( $_POST['patronnote']?? '' ) );
+        // Most request columns are VARCHAR(255): cut to fit (strict SQL mode rejects a longer value instead of cutting it)
+        $cut       = static fn( string $s ): string => mb_substr( $s, 0, 255 );
 
         // Requester identity always comes from the server (the user's own account and the library
         // profile chosen from their own LOC codes), never from the form. Otherwise anyone could post
@@ -738,15 +740,16 @@ class SEAL_Page_Request extends SEAL_Page_Base {
                   `Call Number`,`Location`,`Available`,`article`,`needbydate`,`reqnote`,
                   `patronnote`,`Destination`,`DestSystem`,`Requester lib`,`Requester LOC`,
                   `ReqSystem`,`Requester person`,`requesterEMAIL`,`Timestamp`,`Fill`,
-                  `responderNOTE`,`requesterPhone`,`saddress`,`saddress2`,`caddress`)
-                 VALUES ('0',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'3','',%s,%s,%s,%s)",
+                  `responderNOTE`,`requesterPhone`,`saddress`,`saddress2`,`caddress`,
+                  `returnNote`,`checkinTimeStamp`,`shipMethod`,`IlliadStatus`,`IlliadTransID`)
+                 VALUES ('0',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'3','',%s,%s,%s,%s,'','','','','')",
                 $stat_tbl,
-                $ititle, $iauthor, $pubdate, $isbn, $issn, $itype,
-                $itemcall, $itemlocation, $itemavail, $article_str,
-                $needbydate, $reqnote, $patronnote,
-                $destloc, $destsystem, $inst, $req_loc, $req_sys,
-                "$fname $lname", $combined_email, $today,
-                $wphone, $saddress, $saddress2, $caddress
+                $ititle, $cut( $iauthor ), $cut( $pubdate ), $cut( $isbn ), $cut( $issn ), $cut( $itype ),
+                $cut( $itemcall ), $itemlocation, $cut( $itemavail ), $article_str,
+                $cut( $needbydate ), $cut( $reqnote ), $cut( $patronnote ),
+                $cut( $destloc ), $destsystem, $cut( $inst ), $cut( $req_loc ), $req_sys,
+                $cut( "$fname $lname" ), $cut( $combined_email ), $today,
+                $cut( $wphone ), $cut( $saddress ), $cut( $saddress2 ), $cut( $caddress )
             );
 
             if ( ! $result ) {

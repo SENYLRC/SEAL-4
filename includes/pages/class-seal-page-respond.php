@@ -67,6 +67,7 @@ class SEAL_Page_respond extends SEAL_Page_Base {
             if ( ! in_array( $nofillreason, [ '', '20', '21', '22', '23', '24', '25', '26' ], true ) ) { $nofillreason = ''; }
             // Keep only what belongs to the answer given: no due date / ship method on a "No", no reason on a "Yes".
             if ( $resfill === '0' ) { $duedate = ''; $shipmethod = ''; } else { $nofillreason = ''; }
+            if ( $nofillreason === '' ) { $nofillreason = '0'; }   // INT column: strict SQL mode rejects ''
 
             $result = SEAL_DB::query(
                 "UPDATE %t SET emailsent='1', Fill=%s, responderNOTE=%s, shipMethod=%s,

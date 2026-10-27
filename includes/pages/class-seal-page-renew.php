@@ -86,7 +86,7 @@ class SEAL_Page_renew extends SEAL_Page_Base {
             $error = 'Please give a reason for the renewal.';
         } elseif ( $submitted ) {
             // A new request clears any earlier answer, so it shows as Renew Pending again.
-            SEAL_DB::query( "UPDATE %t SET `renewTimeStamp`=%s, `renewAccountRequester`=%s, `renewNote`=%s, `renewAnswer`='', `renewNoteLender`='' WHERE `illNUB`=%s",
+            SEAL_DB::query( "UPDATE %t SET `renewTimeStamp`=%s, `renewAccountRequester`=%s, `renewNote`=%s, `renewAnswer`='0', `renewNoteLender`='' WHERE `illNUB`=%s",
                 SEAL_DB::$sealSTAT, $timestamp, $wholename, $note, $ill );
 
             $dest_q = SEAL_DB::query( "SELECT `ill_email`, `Name` FROM %t WHERE `loc`=%s LIMIT 1", SEAL_DB::$sealLIB, (string) $req['Destination'] );

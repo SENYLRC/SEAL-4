@@ -75,7 +75,7 @@ class SEAL_Page_bulkaction extends SEAL_Page_Base {
                 case 2: // Renew
                     // A new request: clear the earlier answer and notes so it shows as Renew Pending again
                     // (same as /renew). Bulk renewals carry no reason; /renew asks for one.
-                    SEAL_DB::query("UPDATE %t SET `renewTimeStamp`=%s, `renewAccountRequester`=%s, `renewNote`='', `renewAnswer`='', `renewNoteLender`='' WHERE `illNUB`=%s", $stat_tbl, $timestamp, $wholename, $id);
+                    SEAL_DB::query("UPDATE %t SET `renewTimeStamp`=%s, `renewAccountRequester`=%s, `renewNote`='', `renewAnswer`='0', `renewNoteLender`='' WHERE `illNUB`=%s", $stat_tbl, $timestamp, $wholename, $id);
                     $messages[] = ['type'=>'success','msg'=>"ILL #$id — renewal requested."];
                     $inst = (string)get_user_meta($this->user->ID,'institution',true);
                     if ($dest_email) {

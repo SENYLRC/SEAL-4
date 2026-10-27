@@ -25,6 +25,7 @@ class SEAL_DB_Schema {
         'illNUB', 'Title', 'Author', 'pubdate', 'reqisbn', 'reqissn', 'itype', 'Call Number', 'Location', 'Available', 'article',
         'needbydate', 'reqnote', 'patronnote', 'Destination', 'DestSystem', 'Requester lib', 'Requester LOC', 'ReqSystem',
         'Requester person', 'requesterEMAIL', 'Timestamp', 'Fill', 'responderNOTE', 'requesterPhone', 'saddress', 'saddress2', 'caddress',
+        'returnNote', 'checkinTimeStamp', 'shipMethod', 'IlliadStatus', 'IlliadTransID',
     ];
 
     /**
@@ -324,7 +325,7 @@ class SEAL_DB_Schema {
                         $label . ': ' . count( $fix ) . ' column' . ( count( $fix ) === 1 ? '' : 's' ) . ' need' . ( count( $fix ) === 1 ? 's' : '' ) . ' a default',
                         implode( ', ', array_keys( $fix ) ) . ' — NOT NULL with no default, and new requests don\'t fill ' . ( count( $fix ) === 1 ? 'it' : 'them' ) . '. '
                         . ( $strict ? 'With strict SQL mode every new request fails to save.' : 'Works now only because strict SQL mode is off.' ),
-                        'ALTER TABLE ' . self::q( $name ) . "\n  " . implode( ",\n  ", array_map( static fn( $c, $d ) => 'MODIFY ' . self::q( $c ) . ' ' . $d, array_keys( $fix ), $fix ) ) . ';' );
+                        self::default_sql( $name, $fix ) );
                 }
                 if ( ! isset( ( $t['indexes'] ?? [] )['illnub'] ) && isset( $cols['illnub'] ) ) {
                     $out[] = self::f( 'warn', $key, $label . ': no index on illNUB',
@@ -392,6 +393,22 @@ class SEAL_DB_Schema {
     }
 
     /** Column definition for MODIFY that keeps $c's type and nullability but adds a default (DATE / DATETIME become nullable). */
+    /**
+     * ALTER TABLE giving each column its default. Date columns become nullable, and the zero dates ('0000-00-00') that
+     * MySQL wrote without strict mode become NULL. The session drops strict mode first: copying a table that still holds
+     * zero dates fails under it.
+     */
+    private static function default_sql( string $name, array $fix ): string {
+        $sql   = 'ALTER TABLE ' . self::q( $name ) . "\n  " . implode( ",\n  ", array_map( static fn( $c, $d ) => 'MODIFY ' . self::q( $c ) . ' ' . $d, array_keys( $fix ), $fix ) ) . ';';
+        $dates = array_keys( array_filter( $fix, static fn( $d ) => (bool) preg_match( '/^(DATE|DATETIME|TIMESTAMP)\b.*NULL DEFAULT NULL/i', $d ) ) );
+        if ( ! $dates ) { return $sql; }
+        $sql = "SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION';   -- this connection only\n" . $sql;
+        foreach ( $dates as $c ) {
+            $sql .= "\nUPDATE " . self::q( $name ) . ' SET ' . self::q( $c ) . ' = NULL WHERE YEAR(' . self::q( $c ) . ') = 0;';
+        }
+        return $sql;
+    }
+
     private static function default_fix( array $c, array $spec_cols ): string {
         foreach ( $spec_cols as $col => [ $def ] ) {
             if ( strcasecmp( $col, $c['name'] ) === 0 ) { return $def; }
