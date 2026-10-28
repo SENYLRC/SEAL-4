@@ -35,6 +35,7 @@ class SEAL_Module_PasswordRules {
     public static function init(): void {
         add_filter( 'authenticate',              [ __CLASS__, 'check_login' ], 50, 3 );
         add_action( 'application_password_did_authenticate', [ __CLASS__, 'note_app_password' ] );   // fires at authenticate priority 20
+        add_action( 'wp_authenticate_application_password_errors', [ __CLASS__, 'check_app_password' ], 10, 2 );   // REST: 'authenticate' never runs
         add_action( 'after_password_reset',      [ __CLASS__, 'clear_flag' ], 10, 1 );
         add_action( 'profile_update',            [ __CLASS__, 'clear_flag_on_change' ], 10, 2 );
 
@@ -104,15 +105,27 @@ class SEAL_Module_PasswordRules {
         if ( $reason === '' ) { return $user; }
 
         self::send_reset_link( $user );
+        return new WP_Error( 'seal_pw_reset_required', self::refusal( $reason ) );
+    }
 
+    /**
+     * Application password accepted by WordPress: refuses it while a forced reset is pending. Needed because REST
+     * Basic auth calls wp_authenticate_application_password() directly, without the 'authenticate' filter, so
+     * check_login() never runs there. No breach check: the token is random, and it must not go to the breach API.
+     */
+    public static function check_app_password( $error, $user ): void {
+        if ( ! ( $error instanceof WP_Error ) || ! ( $user instanceof WP_User ) ) { return; }
+        if ( (string) get_user_meta( $user->ID, self::META_FORCE, true ) === '' ) { return; }
+        self::send_reset_link( $user );
+        $error->add( 'seal_pw_reset_required', self::refusal( 'admin' ) );
+    }
+
+    /** The sign-in refusal shown for a forced reset ('admin') or a breached password ('pwned'). */
+    private static function refusal( string $reason ): string {
         $msg = $reason === 'pwned'
             ? seal_config( 'pw_pwned_message' )
             : 'An administrator requires you to choose a new password.';
-
-        return new WP_Error(
-            'seal_pw_reset_required',
-            esc_html( $msg . ' A password reset link has been emailed to the address on your account.' )
-        );
+        return esc_html( $msg . ' A password reset link has been emailed to the address on your account.' );
     }
 
     /** Notes that this request signed in with an application password (WordPress's own check, before check_login()). */

@@ -232,3 +232,13 @@ project's reviewed design. Design notes relevant to review:
   emailed links, bulk action, ILL account pages) also check it themselves.
 - Stub tests: `tests/test-webauthn-origin.php` (real P-256 signatures), `tests/test-password-rules.php`,
   `tests/test-approval-gate.php` (full admin_init sequence).
+
+## v3.15.1: forced reset over REST application passwords
+
+- REST Basic auth calls `wp_authenticate_application_password()` directly (through `determine_current_user`), not the
+  `authenticate` filter, so a forced password reset did not stop a valid application password there. Password Rules now
+  also hooks `wp_authenticate_application_password_errors` and adds an error while the account is flagged (WordPress then
+  refuses the request with 401). The token is never sent to the breach API. Only matters where application passwords are
+  available (Two-Factor and the user-fields module normally switch them off).
+- `tests/test-password-rules.php` runs the REST path through `determine_current_user`; set `WP_CORE_USER_PHP` to run it
+  with WordPress's own functions.
