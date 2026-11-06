@@ -1038,6 +1038,7 @@ body input#datepicker_lp:focus {
 .seal-2fa-status.is-off { background: #e9ecef; color: #343a40; }
 .seal-2fa-body { margin-top: 12px; padding-top: 12px; border-top: 2px solid #E0E6ED; }
 .seal-2fa-body[hidden] { display: none; }
+.seal-illiad-dep[hidden] { display: none !important; }   /* library form: ILLiad fields only when "ILLiad library?" is Yes */
 .seal-2fa-panel p { margin: 0 0 10px; }
 .seal-2fa-setup { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
 .seal-2fa-qr img { display: block; width: 150px; height: 150px; border: 1px solid #ddd; padding: 4px; background: #fff; }

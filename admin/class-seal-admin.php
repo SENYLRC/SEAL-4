@@ -1103,6 +1103,38 @@ class SEAL_Admin {
         echo '</div>';
     }
 
+    /**
+     * Below the crontab block: the line that runs WordPress's own scheduler (set-up reminders at the chosen hour, the
+     * Change History clean-up, the file monitor, Automatic Fallback clean-up). WordPress otherwise only runs these when
+     * someone visits, so on a quiet site they run late. Installed in the web server user's crontab, not the scripts'.
+     * Shows whether the scheduler is keeping up: the set-up reminder job more than 15 minutes overdue means it isn't.
+     */
+    public static function render_wp_cron_box(): void {
+        $php  = SEAL_Org_Rules::cron_setting( 'php' ) ?: '/usr/bin/php';
+        $file = rtrim( ABSPATH, '/' ) . '/wp-cron.php';
+        $user = 'www-data';
+        if ( function_exists( 'posix_getpwuid' ) && function_exists( 'posix_geteuid' ) ) {
+            $pw = posix_getpwuid( posix_geteuid() );
+            if ( ! empty( $pw['name'] ) ) { $user = (string) $pw['name']; }
+        }
+        $line = '*/5 * * * * ' . $php . ' ' . $file . ' >/dev/null 2>&1';
+        echo '<h3 id="seal-wp-cron" style="margin-top:24px">WordPress\'s own scheduler</h3>'
+           . '<p class="description" style="max-width:1120px">Separate from the jobs above: this runs the plugin\'s WordPress jobs (set-up reminders at the hour chosen under Users &amp; Registration, the Change History clean-up, the file monitor, Automatic Fallback clean-up). '
+           . 'Without it WordPress runs them only when someone visits the site, so they can run hours late. Install it in the <strong>web server user\'s</strong> crontab (not the one above): '
+           . '<code>sudo crontab -u ' . esc_html( $user ) . ' -e</code>, paste the line, save; check with <code>sudo crontab -u ' . esc_html( $user ) . ' -l</code>.</p>'
+           . '<div class="seal-cron-box"><textarea class="seal-cron-text" readonly rows="2" spellcheck="false" aria-label="WordPress scheduler crontab line">' . esc_textarea( "# WordPress scheduler for " . seal_config( 'system_name' ) . "\n" . $line ) . '</textarea></div>';
+        if ( defined( 'DISABLE_WP_CRON' ) && DISABLE_WP_CRON ) {
+            echo '<p class="description"><strong>DISABLE_WP_CRON is set</strong> in wp-config.php, so WordPress never runs its jobs on visits: this line is required.</p>';
+        }
+        $next = class_exists( 'SEAL_Setup_Reminders' ) ? wp_next_scheduled( SEAL_Setup_Reminders::HOOK ) : false;
+        if ( $next ) {
+            $late = time() - (int) $next;
+            echo $late > 15 * MINUTE_IN_SECONDS
+                ? '<p class="notice notice-warning inline" style="padding:8px 12px">The daily set-up reminder job was due ' . esc_html( human_time_diff( (int) $next, time() ) ) . ' ago and hasn\'t run yet: WordPress\'s scheduler isn\'t being triggered. Install the line above.</p>'
+                : '<p class="description">&#10004; Scheduler keeping up: the next set-up reminder run is ' . esc_html( wp_date( 'D j M, g:i a', (int) $next ) ) . '.</p>';
+        }
+    }
+
     /** Everything on this page as one JSON document (for moving rules to another site). */
     public static function rules_export(): array {
         $lists = [];
@@ -1119,6 +1151,7 @@ class SEAL_Admin {
 
     /** Under the Cron Jobs form: where changes and the export live (shared with Org Rules). */
     public static function render_cron_after(): void {
+        self::render_wp_cron_box();
         $u = admin_url( 'admin.php?page=' . self::PAGES['rules'] );
         echo '<p class="description" style="max-width:1120px">Changes to this screen are recorded under <a href="' . esc_url( $u . '#rules-history' ) . '">Org Rules &rarr; Change history</a>, '
            . 'and <a href="' . esc_url( $u . '#seal-rules-export' ) . '">Org Rules &rarr; Move these rules to another site</a> includes the Scheduled Jobs list and these settings.</p>';

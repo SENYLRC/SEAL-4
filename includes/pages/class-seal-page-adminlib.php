@@ -666,7 +666,11 @@ class SEAL_Page_adminlib extends SEAL_Page_Base {
                 <?php endif; ?>
 
                 <?php if ( current_user_can( 'seal_admin' ) && SEAL_DB::has_column( SEAL_DB::$sealLIB, 'IlliadURL' ) ) :
-                    $key_now = (string) ( $row['APIkey'] ?? '' ); ?>
+                    $key_now   = (string) ( $row['APIkey'] ?? '' );
+                    $is_illiad = (string) ( $row['Illiad'] ?? '0' ) === '1';
+                    $days_now  = (int) ( $row['IlliadDATE'] ?? 0 );
+                    // Address, loan period and key only matter for an ILLiad library: shown only while "Yes" is chosen
+                    // (hidden, not cleared, so switching back keeps them). ?>
                 <h4 style='margin-top:20px;'>ILLiad</h4>
                 <input type='hidden' name='illiad_present' value='1'>
                 <p class='description' style='margin:0 0 8px'>For lenders that receive requests in ILLiad (Web Platform API). Only Administrators and ILL Administrators can see or change these.</p>
@@ -678,15 +682,15 @@ class SEAL_Page_adminlib extends SEAL_Page_Base {
                             <option value='1' <?php selected( (string) ( $row['Illiad'] ?? '0' ), '1' ); ?>>Yes</option>
                         </select>
                     </div>
-                    <div class='form-group'>
+                    <div class='form-group seal-illiad-dep'<?php echo $is_illiad ? '' : ' hidden'; ?>>
                         <label for='fld_illiad_url'>ILLiad Web Platform address</label>
                         <input type='url' id='fld_illiad_url' name='illiad_url' value='<?php echo $v( 'IlliadURL' ); ?>' placeholder='https://…/ILLiadWebPlatform/Transaction/'>
                     </div>
-                    <div class='form-group'>
+                    <div class='form-group seal-illiad-dep'<?php echo $is_illiad ? '' : ' hidden'; ?>>
                         <label for='fld_illiad_days'>Default loan period (days)</label>
-                        <input type='number' id='fld_illiad_days' name='illiad_days' min='1' max='365' value='<?php echo $v( 'IlliadDATE' ); ?>'>
+                        <input type='number' id='fld_illiad_days' name='illiad_days' min='1' max='365' value='<?php echo $days_now > 0 ? (int) $days_now : ''; ?>'><?php /* 0 / blank shown empty: a hidden 0 would fail min=1 and block saving */ ?>
                     </div>
-                    <div class='form-group'>
+                    <div class='form-group seal-illiad-dep'<?php echo $is_illiad ? '' : ' hidden'; ?>>
                         <label for='fld_illiad_key'>API key</label>
                         <input type='password' id='fld_illiad_key' name='illiad_key' value='' autocomplete='new-password' placeholder='<?php echo $key_now === '' ? 'Not set' : 'Leave blank to keep the current key'; ?>' aria-describedby='fld_illiad_key_help'>
                         <small id='fld_illiad_key_help' style='color:#595959'><?php
@@ -694,6 +698,14 @@ class SEAL_Page_adminlib extends SEAL_Page_Base {
                         <?php if ( $key_now !== '' ) : ?><label style='font-weight:normal;margin-top:4px'><input type='checkbox' name='illiad_key_remove' value='1'> Remove the stored key</label><?php endif; ?>
                     </div>
                 </div>
+                <script>
+                (function () {
+                    var sel = document.getElementById('fld_illiad');
+                    if (!sel) { return; }
+                    var deps = document.querySelectorAll('.seal-illiad-dep');
+                    sel.addEventListener('change', function () { deps.forEach(function (d) { d.hidden = sel.value !== '1'; }); });
+                })();
+                </script>
                 <?php endif; ?>
 
                 <div style='margin-top:25px;'>

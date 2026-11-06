@@ -175,6 +175,11 @@ class SEAL_DB_Schema {
 
     private static function q( string $id ): string { return '`' . str_replace( '`', '', $id ) . '`'; }
 
+    /** A code column compared ignoring case, surrounding spaces, tabs and line breaks (same as SEAL_Resend::code_sql()). */
+    private static function code_sql( string $col ): string {
+        return "UPPER(TRIM(REPLACE(REPLACE(REPLACE({$col}, CHAR(13), ''), CHAR(10), ''), CHAR(9), '')))";
+    }
+
     // ── Reading the live database ─────────────────────────────────────────────
 
     /**
@@ -228,10 +233,21 @@ class SEAL_DB_Schema {
             $map = $info['tables']['illiad'];
             if ( $map['exists'] && isset( $map['columns']['loc'], $c['loc'] ) ) {
                 $orph = [];
-                $res  = SEAL_DB::query( "SELECT DISTINCT m.`LOC` AS l FROM %t m LEFT JOIN %t l ON UPPER(TRIM(l.`loc`)) = UPPER(TRIM(m.`LOC`)) WHERE l.`loc` IS NULL LIMIT 50", $map['name'], $lib['name'] );
+                // Same comparison as the ILLiad lookup (SEAL_Resend::code_sql): hidden line breaks / tabs don't make a code "missing".
+                $res  = SEAL_DB::query( 'SELECT DISTINCT m.`LOC` AS l FROM %t m LEFT JOIN %t l ON ' . self::code_sql( 'l.`loc`' ) . ' = ' . self::code_sql( 'm.`LOC`' ) . ' WHERE l.`loc` IS NULL LIMIT 50', $map['name'], $lib['name'] );
                 while ( $res && ( $r = $res->fetch_assoc() ) ) { $orph[] = (string) $r['l']; }
                 $info['data']['map_orphans'] = $orph;
             }
+            // Codes with hidden characters (line break, tab, leading / trailing space): they look right on screen but
+            // exact matches elsewhere (old scripts, reports, other tools) miss them.
+            $dirty = [];
+            foreach ( [ [ 'lib', $lib, 'loc' ], [ 'illiad', $map, 'loc' ], [ 'illiad', $map, 'illiadid' ] ] as [ $k, $tbl, $col ] ) {
+                if ( empty( $tbl['exists'] ) || ! isset( $tbl['columns'][ $col ] ) ) { continue; }
+                $cn  = (string) $tbl['columns'][ $col ]['name'];
+                $res = SEAL_DB::query( 'SELECT DISTINCT ' . self::q( $cn ) . ' AS v FROM %t WHERE ' . self::q( $cn ) . ' <> TRIM(REPLACE(REPLACE(REPLACE(' . self::q( $cn ) . ", CHAR(13), ''), CHAR(10), ''), CHAR(9), '')) LIMIT 50", $tbl['name'] );
+                while ( $res && ( $r = $res->fetch_assoc() ) ) { $dirty[ $k ][ $cn ][] = (string) $r['v']; }
+            }
+            $info['data']['dirty_codes'] = $dirty;
         }
         return $info;
     }
@@ -364,6 +380,15 @@ class SEAL_DB_Schema {
                         'ill_email holds ' . $w . ' characters; values that long were probably cut off when saved (a second address lost or half an address).',
                         'ALTER TABLE ' . self::q( $name ) . ' MODIFY `ill_email` VARCHAR(500) NULL DEFAULT NULL;', 'Widen the column, then re-enter those addresses.' );
                 }
+            }
+
+            foreach ( (array) ( $info['data']['dirty_codes'][ $key ] ?? [] ) as $col => $vals ) {
+                $shown = array_map( static fn( $v ) => '"' . str_replace( [ "\r", "\n", "\t" ], [ '\\r', '\\n', '\\t' ], $v ) . '"', $vals );
+                $q     = self::q( $col );
+                $out[] = self::f( 'warn', $key, $label . ': ' . count( $vals ) . ' code' . ( count( $vals ) === 1 ? '' : 's' ) . ' in ' . $col . ' with hidden characters',
+                    implode( ', ', $shown ) . ' (line break, tab or extra space). They look right on screen, but lookups that match the code exactly miss them.',
+                    'UPDATE ' . self::q( $name ) . ' SET ' . $q . " = TRIM(REPLACE(REPLACE(REPLACE(" . $q . ", CHAR(13), ''), CHAR(10), ''), CHAR(9), '')) WHERE " . $q . " <> TRIM(REPLACE(REPLACE(REPLACE(" . $q . ", CHAR(13), ''), CHAR(10), ''), CHAR(9), ''));",
+                    'Back up the table first.' );
             }
 
             if ( $key === 'illiad' && ! empty( $info['data']['map_orphans'] ) ) {

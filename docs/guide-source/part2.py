@@ -255,6 +255,12 @@ def build(g):
         ["Job output", "Discard output, or append it to the log file."],
         ["Log file", "Where output goes when appending. The user that runs cron must be able to write to it."],
         ["Copy and paste", "The finished crontab block, ready to paste into `crontab -e`."],
+        ["WordPress's own scheduler", ["A second box with one line for the **web server user's** crontab (`sudo crontab -u www-data -e`), filled in with this "
+                                       "site's folder: `*/5 * * * * php …/wp-cron.php`. It runs the plugin's WordPress jobs on time: set-up reminders at the chosen "
+                                       "hour, the Change History clean-up, the file monitor and Automatic Fallback clean-up. Without it WordPress runs them only when "
+                                       "someone visits the site.",
+                                       "Below it the screen says whether the scheduler is keeping up; a warning that the reminder job is overdue means the line "
+                                       "isn't installed (or WordPress's scheduler is switched off with DISABLE_WP_CRON)."]],
         ["Data retention (anonymize.php)", ["How long request details are kept (section 5): expire unanswered requests after **18** months, clear the "
                                             "request note of expired requests after **30** days, anonymize requests older than **60** months. "
                                             "0 turns a step off. The job reads these every run; changes are recorded in Change History."]],

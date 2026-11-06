@@ -152,12 +152,25 @@ class SEAL_Resend {
      * @return array{row:?array,exact:bool}
      */
     public static function mapping( string $borrower_loc, string $lender_loc ): array {
-        $q = SEAL_DB::query( "SELECT `illiadADDnumb`,`illiadLIBSymbol` FROM %t WHERE `LOC`=%s AND `illiadID`=%s LIMIT 1", SEAL_DB::$sealILLiadMapping, $borrower_loc, $lender_loc );
+        // Codes compared ignoring case, surrounding spaces, tabs and line breaks: mapping rows pasted from spreadsheets
+        // often carry a hidden line break ("nyrvll\r"), and an exact match would silently miss them.
+        $b = self::code( $borrower_loc ); $l = self::code( $lender_loc );
+        $q = SEAL_DB::query( 'SELECT `illiadADDnumb`,`illiadLIBSymbol` FROM %t WHERE ' . self::code_sql( '`LOC`' ) . '=%s AND ' . self::code_sql( '`illiadID`' ) . '=%s LIMIT 1', SEAL_DB::$sealILLiadMapping, $b, $l );
         $row = $q ? $q->fetch_assoc() : null;
         if ( $row ) { return [ 'row' => $row, 'exact' => true ]; }
-        $q = SEAL_DB::query( "SELECT `illiadADDnumb`,`illiadLIBSymbol` FROM %t WHERE `LOC`=%s LIMIT 1", SEAL_DB::$sealILLiadMapping, $borrower_loc );
+        $q = SEAL_DB::query( 'SELECT `illiadADDnumb`,`illiadLIBSymbol` FROM %t WHERE ' . self::code_sql( '`LOC`' ) . '=%s LIMIT 1', SEAL_DB::$sealILLiadMapping, $b );
         $row = $q ? $q->fetch_assoc() : null;
         return [ 'row' => $row ?: null, 'exact' => false ];
+    }
+
+    /** SQL for a code column with case, surrounding spaces, tabs and line breaks ignored. $col is a backticked column name. */
+    public static function code_sql( string $col ): string {
+        return "UPPER(TRIM(REPLACE(REPLACE(REPLACE({$col}, CHAR(13), ''), CHAR(10), ''), CHAR(9), '')))";
+    }
+
+    /** A code as code_sql() sees it: upper case, no whitespace (incl. non-breaking spaces). */
+    public static function code( string $v ): string {
+        return strtoupper( (string) preg_replace( '/[\s\x{00A0}]+/u', '', $v ) );
     }
 
     /** The JSON body ILLiad's lending API expects — loan shape, or photocopy shape for articles. */

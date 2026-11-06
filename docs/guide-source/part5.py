@@ -6,7 +6,7 @@ def build(g):
     g.h2("7.1 Setting up a lender")
     g.steps([
         "On the library's record (**Manage All Libraries → Edit → ILLiad**, Administrators and ILL Administrators only), set "
-        "**ILLiad library** to Yes and enter its ILLiad Web Platform address (https://…), its default loan period in days and its "
+        "**ILLiad library** to Yes (the address, loan period and key boxes appear only then) and enter its ILLiad Web Platform address (https://…), its default loan period in days and its "
         "**API key**. The key is saved encrypted (section 4.4) and is never shown again: the form only says whether one is stored. Enter a "
         "new key to replace it, or tick **Remove the stored key**.",
         "Under **ILLiad Mapping**, add a row for each borrowing library that may send to it: borrower LOC code, the lender's "

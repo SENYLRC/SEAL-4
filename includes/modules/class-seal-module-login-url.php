@@ -74,6 +74,9 @@ class SEAL_Module_LoginURL {
         remove_action( 'template_redirect', 'wp_redirect_admin_locations', 1000 );
     }
 
+    /** An address no page uses: logged-out visitors to /wp-admin are sent here and get the theme's 404 page. */
+    const NOT_FOUND_PATH = 'seal-not-found/';
+
     /** Sends logged-out visitors to /wp-admin or /wp-login.php to a normal 404 page. */
     public static function wp_loaded(): void {
         global $pagenow;
@@ -82,7 +85,12 @@ class SEAL_Module_LoginURL {
             && ! wp_doing_ajax() && ! wp_doing_cron()
             && ! ( defined( 'WP_CLI' ) && WP_CLI )
             && $pagenow !== 'admin-post.php' ) {
-            self::serve_404();
+            // Not rendered in place: inside wp-admin WordPress is in admin mode (is_admin()), and drawing the theme's
+            // public 404 template there ended in "There has been a critical error" (HTTP 500). Send the visitor to an
+            // address that doesn't exist instead; WordPress serves its normal 404 page from the public side.
+            nocache_headers();
+            wp_safe_redirect( home_url( '/' . self::NOT_FOUND_PATH ), 302 );
+            exit;
         }
 
         if ( self::$block_login ) {

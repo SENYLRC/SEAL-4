@@ -45,8 +45,10 @@ class SEAL_DB {
     public static function query( string $sql, ...$a ) {
         if ( str_starts_with( $sql, 'UPDATE' ) ) { if ( self::$fail_update ) { return false; } self::$updates[] = $a; return true; }
         if ( str_contains( $sql, 'FROM %t WHERE `loc`=%s' ) ) { return new R( isset( self::$lib[ $a[1] ] ) ? [ self::$lib[ $a[1] ] ] : [] ); }
-        if ( str_contains( $sql, '`illiadID`=%s' ) ) { return new R( array_values( array_filter( self::$map, fn( $m ) => $m['LOC'] === $a[1] && $m['illiadID'] === $a[2] ) ) ); }
-        if ( str_contains( $sql, 'FROM %t WHERE `LOC`=%s' ) ) { return new R( array_values( array_filter( self::$map, fn( $m ) => $m['LOC'] === $a[1] ) ) ); }
+        // Mapping lookups compare codes the way SEAL_Resend::code_sql() does: upper case, no spaces / tabs / line breaks.
+        $n = static fn( string $v ): string => strtoupper( trim( str_replace( [ "\r", "\n", "\t" ], '', $v ) ) );
+        if ( str_contains( $sql, "`illiadID`, CHAR(13)" ) ) { return new R( array_values( array_filter( self::$map, fn( $m ) => $n( $m['LOC'] ) === $a[1] && $n( $m['illiadID'] ) === $a[2] ) ) ); }
+        if ( str_contains( $sql, "`LOC`, CHAR(13)" ) ) { return new R( array_values( array_filter( self::$map, fn( $m ) => $n( $m['LOC'] ) === $a[1] ) ) ); }
         if ( str_contains( $sql, '`illNUB`=%s' ) ) { return new R( [ self::$req ] ); }
         fwrite( STDERR, "unexpected query: $sql\n" ); return false;
     }
@@ -106,6 +108,9 @@ t( 'uses the row for this lender, not the borrower\'s first row', $p['LenderAddr
 reset_all(); SEAL_DB::$map = [ SEAL_DB::$map[0] ]; $GLOBALS['illiad'] = answer( [ 'TransactionNumber' => '987654' ] );
 $r = $send();
 t( 'no row for the pair: sent with the first row, note returned', $r['ok'] && $r['mapping_note'] !== '', json_encode( $r ) );
+reset_all(); SEAL_DB::$map[1]['LOC'] = "borr\r\n"; SEAL_DB::$map[1]['illiadID'] = " lend\t"; $GLOBALS['illiad'] = answer( [ 'TransactionNumber' => '987654' ] );
+$r = $send(); $p = json_decode( $GLOBALS['posted']['body'], true );
+t( 'mapping row with a hidden line break / tab / other case still matches exactly', $r['ok'] && $p['LenderAddressNumber'] === '222' && ( $r['mapping_note'] ?? '' ) === '', json_encode( [ $r, $p ] ) );
 
 echo "=== request page alert ===\n";
 $page = ( new ReflectionClass( 'SEAL_Page_request' ) )->newInstanceWithoutConstructor();

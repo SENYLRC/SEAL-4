@@ -69,6 +69,10 @@ t( 'duplicate LOC: warn', (bool) find( $f2, 'warn', 'ABC (2)' ) );
 t( 'participant without email: warn', (bool) find( $f2, 'warn', 'no ILL email' ) );
 t( 'library system code longer than DestSystem: fail in strict mode', (bool) find( $f2, 'fail', 'DestSystem is too short' ) );
 t( 'mapping LOC not in library table: info', (bool) find( $f2, 'info', 'ZZZ' ) );
+$i2 = $info; $i2['data']['dirty_codes'] = [ 'illiad' => [ 'LOC' => [ "nyrvll\r" ] ] ];
+$f3 = SEAL_DB_Schema::analyze( $i2 );
+$d  = find( $f3, 'warn', 'hidden characters' );
+t( 'mapping code with a hidden line break: warn, shown as \\r, with clean-up SQL', $d && str_contains( json_encode( $d ), 'nyrvll\\\\r' ) && str_contains( json_encode( $d ), 'CHAR(13)' ), json_encode( $d ) );
 
 $dump = $argv[1] ?? '';
 if ( $dump !== '' ) {
