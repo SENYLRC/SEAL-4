@@ -161,7 +161,8 @@ def build(g):
     g.h2("6.9 Watching all requests")
     g.p("**All Requests** (ILL Admin) and **Manage All Requests** (own system) list every request, with filters by status, library, "
         "date and ILL number. The status column shows badges: Filled, Not Filled, Reminder Sent and Expired. All notes "
-        "appear under each request.")
+        "appear under each request. Each request still waiting for an answer has a Resend link; filled and not-filled "
+        "requests don't.")
     g.h3("Resend a Request")
     g.p("For when a library says it never got a request, or an ILLiad submission failed. Enter the ILL number to see the request, then:")
     g.bullets([

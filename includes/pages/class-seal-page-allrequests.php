@@ -188,7 +188,9 @@ class SEAL_Page_allrequests extends SEAL_Page_Base {
                     <?php if ($shiptxt): ?><div class='shiptxt'><?php echo esc_html($shiptxt); ?></div><?php endif; ?>
                     <?php if ($badge): ?><div class='status-badge <?php echo esc_attr($badge[0]); ?>' title='<?php echo esc_attr($badge[2]); ?>'><?php echo esc_html($badge[1]); ?></div><?php endif; ?>
                     <?php if(!empty($r['IlliadTransID'])): ?><div class='illiad-id'><strong>ILLiad ID:</strong> <?php echo esc_html($r['IlliadTransID']); ?></div><?php endif; ?>
+                    <?php if ( $fill_raw !== '1' && $fill_raw !== '0' ): // answered (filled / not filled): nothing to resend ?>
                     <div class='seal-resend-link'><a href="<?php echo esc_url( add_query_arg( 'num', $r['illNUB'], home_url( '/resend' ) ) ); ?>">Resend<span class="seal-sr-only"> <?php echo esc_html($r['illNUB']); ?></span></a></div>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php
