@@ -51,7 +51,7 @@ class SEAL_Sidebar {
             'System Staff' => [
                 [ 'Manage Accounts',         '/adminlib-accounts-ls','seal_view_system' ],
                 [ 'Manage All Requests',     '/allrequests-ls',   'seal_view_system' ],
-                [ 'Manage Library',          '/adminlib-ls',      'seal_adminlib_ls' ],
+                [ 'Manage Libraries',          '/adminlib-ls',      'seal_adminlib_ls' ],
                 [ 'System Statistics',       '/stats-ls',         'seal_stats_system' ],
             ],
             'ILL Admin' => [
