@@ -78,7 +78,7 @@ def build(g):
         ["{name} / {username}", "The person's name / username (account emails)."],
         ["{library} / {borrower_library}", "The borrowing library."],
         ["{lender_library}", "The lending library."],
-        ["{start} / {end}", "The first and last day of the week (weekly statistics)."],
+        ["{start} / {end}", "The first and last day counted (weekly statistics: the Monday and Sunday before the run)."],
     ], [1.8, 4.7])
     g.bullets([
         "Emails sent from the site get the System Short Name in brackets in front, e.g. [ILL], unless the subject already contains it. "

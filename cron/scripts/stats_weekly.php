@@ -30,15 +30,18 @@ $db->set_charset("utf8mb4");
 // ----------------------------------------------------
 //  Date Window
 // ----------------------------------------------------
-$startdate = date('Y-m-d', strtotime('-7 days'));
-$curdate   = date('Y-m-d');
+// The 7 whole days before today: from midnight 7 days ago up to (not including) midnight today, so a request
+// made early on the day the job runs is counted next week, not in two weekly emails.
+$startdate = date('Y-m-d', strtotime('today -7 days'));
+$curdate   = date('Y-m-d', strtotime('yesterday'));   // last day counted (shown in the email)
 // To use “from start of service”, uncomment next line:
 // $startdate = '2016-07-01';
 
 $startTs = $startdate . ' 00:00:00';
-$endTs   = $curdate   . ' 23:59:59';
+$endTs   = date('Y-m-d') . ' 00:00:00';                // exclusive
+$window  = "`Timestamp` >= '$startTs' AND `Timestamp` < '$endTs'";
 
-error_log(date('c') . " - Stats window: $startTs → $endTs\n", 3, $logfile);
+error_log(date('c') . " - Stats window: $startTs → $endTs (not included)\n", 3, $logfile);
 
 // ----------------------------------------------------
 //  Helper for COUNT(*) queries
@@ -56,12 +59,12 @@ function count_query(mysqli $db, string $sql): int
 // ----------------------------------------------------
 //  Counts (use COUNT(*) for performance)
 // ----------------------------------------------------
-$total_req = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE `Timestamp` BETWEEN '$startTs' AND '$endTs'");
-$filled    = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE `Timestamp` BETWEEN '$startTs' AND '$endTs' AND `Fill`=1");
-$notfill   = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE `Timestamp` BETWEEN '$startTs' AND '$endTs' AND `Fill`=0");
-$noanswer  = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE `Timestamp` BETWEEN '$startTs' AND '$endTs' AND `Fill`=3");
-$expired   = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE `Timestamp` BETWEEN '$startTs' AND '$endTs' AND `Fill`=4");
-$canceled  = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE `Timestamp` BETWEEN '$startTs' AND '$endTs' AND `Fill`=6");
+$total_req = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE $window");
+$filled    = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE $window AND `Fill`=1");
+$notfill   = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE $window AND `Fill`=0");
+$noanswer  = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE $window AND `Fill`=3");
+$expired   = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE $window AND `Fill`=4");
+$canceled  = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illSTAT` WHERE $window AND `Fill`=6");
 
 $libs_active        = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illLIB` WHERE `participant`=1 AND `suspend`=0");
 $libs_suspended     = count_query($db, "SELECT COUNT(*) AS cnt FROM `$illLIB` WHERE `participant`=1 AND `suspend`=1");

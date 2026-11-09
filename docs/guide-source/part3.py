@@ -9,7 +9,7 @@ def build(g):
         ["expire.php", "Daily 07:06", "Expires requests still unanswered after 5 business days and emails both sides. With Automatic Fallback on, moves the request to the next library instead."],
         ["check_suspend.php", "Daily 07:05", "Ends a library's suspension once its end date has passed. Suspensions with no end date stay in place."],
         ["due_date.php", "Daily 07:05", "Emails borrowers 5 days before an item they received is due."],
-        ["stats_weekly.php", "Mondays 07:10", "Emails the weekly statistics summary (requests, fill rate, expiry rate)."],
+        ["stats_weekly.php", "Mondays 07:10", "Emails the weekly statistics summary (requests, fill rate, expiry rate) for the 7 days before the run: Monday to Sunday."],
         ["check_illiad.php", "08:00, 12:00, 16:00, 20:00", "Reads the status of requests sent to ILLiad lenders and updates status, due date and shipping."],
         ["illiad_return.php", "Daily 20:00", "Marks requests that ILLiad reports as finished as returned and checked in."],
         ["check_illiad_duedate.php", "Daily 20:00", "Copies due dates changed in ILLiad back to the request, records ILLiad cancellations, and closes shipped requests older than the auto-close limit."],
