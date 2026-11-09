@@ -577,7 +577,7 @@ class SEAL_Org_Rules {
         }
 
         if ( $split ) {
-            $parts = preg_split( '/[:\-]/', $alias, 2 );
+            $parts = preg_split( '/[:\-\/]/', $alias, 2 );
             if ( count( $parts ) !== 2 ) { return null; }
             $alias = trim( $parts[0] );
         }
@@ -702,7 +702,7 @@ class SEAL_Org_Rules {
     /** Generic holdings: 1 = available, 0 = not. */
     public static function normalize_availability( $raw ): int {
         $v = str_replace( [ ' ', "\n", "\r", "\t" ], '', (string) $raw );
-        return in_array( $v, [ '-', 'AVAILABLE', 'Available', 'CheckedIn', 'CHECKEDIN' ], true ) ? 1 : 0;
+        return in_array( $v, [ '-', 'AVAILABLE', 'Available', 'CheckedIn', 'CHECKEDIN', '1', 'available' ], true ) ? 1 : 0;
     }
 
     /** Label for an availability code: 1 Available, 0 Unavailable, anything else UNKNOWN. */

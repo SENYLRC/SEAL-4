@@ -93,7 +93,7 @@ class SEAL_Org_Rules_Help {
             'alias' => [
                 'what' => 'After the alias text is chosen, the request page looks for a library whose Alias field (Manage Libraries → Alias) matches it. By default the match must be exact. A rule here changes how that search works for one catalog. You only need a rule when the catalog\'s wording does not exactly equal the alias in your directory.',
                 'when' => [
-                    'The catalog adds extra text after the library name ("Amsterdam Free Library - Adult"): turn on Split so only the part before the "-" or ":" is used.',
+                    'The catalog adds extra text after the library name ("Amsterdam Free Library - Adult"): turn on Split so only the part before the "-", ":" or "/" is used.',
                     'Several systems share one combined catalog: restrict the search to those systems so a same-named library in another system is never picked.',
                     'Your directory alias is longer or shorter than the catalog\'s text: use Starts with or Contains instead of Exactly.',
                     'Two systems each have a library with the same name: restrict by system.',
