@@ -7,8 +7,8 @@
  * Users list. ILL-specific roles (libstaff, libsys) are first-class citizens.
  *
  * What this adds:
- *  - "Change Role" panel on user Edit Profile page (admin only)
- *  - Bulk role assignment on Users → Bulk Actions
+ *  - "Role Management" checkboxes on the user Edit Profile page (admin only): an account can hold several roles
+ *  - Bulk role change / add / remove on Users → Bulk Actions
  *  - A "Roles" admin page under the ILL menu showing all roles + capabilities
  *  - [seal_roles] shortcode (admin-only) for role reference
  */
@@ -25,6 +25,8 @@ class SEAL_Module_RoleEditor {
         // Profile: role changer (admin only)
         add_action( 'edit_user_profile',        [ __CLASS__, 'role_field'        ] );
         add_action( 'edit_user_profile_update', [ __CLASS__, 'save_role'         ] );
+        add_action( 'user_profile_update_errors', [ __CLASS__, 'role_errors'     ] );
+        add_action( 'admin_head-user-edit.php', [ __CLASS__, 'hide_core_role_row' ] );
 
         // Users list: bulk action
         add_filter( 'bulk_actions-users',       [ __CLASS__, 'add_bulk_actions'  ] );
@@ -55,33 +57,38 @@ class SEAL_Module_RoleEditor {
     // ── Profile role changer (admin only) ─────────────────────────────────────
 
     /**
-     * A role dropdown on another user's profile, for users who may promote that user. Nobody can change their
-     * own role here, and the list only holds roles the current user may give (allowed_roles()).
+     * Role checkboxes on another user's profile, for users who may promote that user: an account can hold several
+     * roles (e.g. Administrator and ILL Administrator). Nobody can change their own roles here, and only roles the
+     * current user may give (allowed_roles()) can be ticked; any other role the account has is listed and kept.
      */
     public static function role_field( WP_User $user ): void {
         if ( ! self::can_change( $user->ID ) ) { return; }   // includes: not your own role
 
-        $current_roles = $user->roles;
+        $current_roles = (array) $user->roles;
         $all_roles     = self::allowed_roles();
+        $other         = array_diff( $current_roles, array_keys( $all_roles ) );
         ?>
         <h3>Role Management</h3>
-        <table class="form-table">
+        <table class="form-table" role="presentation">
             <tr>
-                <th scope="row"><label for="seal_new_role">Change Role</label></th>
+                <th scope="row">Roles</th>
                 <td>
                     <?php wp_nonce_field( 'seal_change_role_' . $user->ID, 'seal_role_nonce' ); ?>
-                    <select name="seal_new_role" id="seal_new_role">
-                        <option value="">— No change —</option>
+                    <fieldset>
+                        <legend class="screen-reader-text">Roles</legend>
                         <?php foreach ( $all_roles as $slug => $name ): ?>
-                        <option value="<?php echo esc_attr( $slug ); ?>"
-                            <?php selected( in_array( $slug, $current_roles, true ) ); ?>>
+                        <label style="display:block;margin-bottom:4px">
+                            <input type="checkbox" name="seal_roles[]" value="<?php echo esc_attr( $slug ); ?>"
+                                <?php checked( in_array( $slug, $current_roles, true ) ); ?>>
                             <?php echo esc_html( translate_user_role( $name ) ); ?>
-                        </option>
+                        </label>
                         <?php endforeach; ?>
-                    </select>
+                    </fieldset>
                     <p class="description">
-                        Current role(s): <strong><?php echo esc_html( implode( ', ', $current_roles ) ); ?></strong><br>
-                        Changing role <em>replaces</em> all existing roles with the selected one.
+                        Tick every role this account should have. Permissions add up: the account can do everything any of its roles allows.
+                        <?php if ( $other ): ?>
+                        <br>Also has (only an Administrator can change these): <strong><?php echo esc_html( implode( ', ', array_map( [ __CLASS__, 'role_name' ], $other ) ) ); ?></strong>
+                        <?php endif; ?>
                     </p>
                 </td>
             </tr>
@@ -89,44 +96,86 @@ class SEAL_Module_RoleEditor {
         <?php
     }
 
-    /** Saves the role chosen on the profile after the nonce and permission checks (never your own role). */
+    /** A role's display name (the slug when the role no longer exists). */
+    private static function role_name( string $slug ): string {
+        $names = wp_roles()->get_names();
+        return isset( $names[ $slug ] ) ? translate_user_role( $names[ $slug ] ) : $slug;
+    }
+
+    /** Hides WordPress's own single Role dropdown where the Role Management checkboxes are shown. */
+    public static function hide_core_role_row(): void {
+        $uid = (int) ( $_GET['user_id'] ?? 0 );
+        if ( $uid && self::can_change( $uid ) ) {
+            echo '<style>.user-role-wrap{display:none}</style>';
+        }
+    }
+
+    /**
+     * Saves the ticked roles after the nonce and permission checks (never your own roles): adds the ticked ones,
+     * removes the unticked ones the current user may give, keeps the rest. At least one role must stay. Also
+     * stops WordPress's own Role dropdown (saved right after this hook) from replacing them with a single role.
+     */
     public static function save_role( int $user_id ): void {
         if ( ! self::can_change( $user_id ) ) { return; }
         if ( ! isset( $_POST['seal_role_nonce'] ) ||
              ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['seal_role_nonce'] ) ), 'seal_change_role_' . $user_id )
         ) { return; }
 
-        $new_role = sanitize_key( wp_unslash( $_POST['seal_new_role'] ?? '' ) );
-        if ( $new_role === '' ) { return; }
-
-        if ( ! array_key_exists( $new_role, self::allowed_roles() ) ) { return; }   // e.g. an ILL Administrator can't grant Administrator
+        unset( $_POST['role'] );   // edit_user() would otherwise set_role() the dropdown's single role
 
         $user = get_userdata( $user_id );
         if ( ! $user ) { return; }
 
-        // Replace all roles with the new one
-        $user->set_role( $new_role );
+        $allowed = self::allowed_roles();
+        $ticked  = array_values( array_intersect(
+            array_map( 'sanitize_key', (array) wp_unslash( $_POST['seal_roles'] ?? [] ) ),
+            array_keys( $allowed )                                   // e.g. an ILL Administrator can't grant Administrator
+        ) );
+        $kept    = array_diff( (array) $user->roles, array_keys( $allowed ) );
+
+        if ( ! $ticked && ! $kept ) {
+            self::$no_role = true;                                   // reported by role_errors(); roles unchanged
+            return;
+        }
+        foreach ( array_keys( $allowed ) as $slug ) {
+            $has = in_array( $slug, (array) $user->roles, true );
+            if ( in_array( $slug, $ticked, true ) && ! $has ) { $user->add_role( $slug ); }
+            if ( ! in_array( $slug, $ticked, true ) && $has ) { $user->remove_role( $slug ); }
+        }
+    }
+
+    /** True when a profile save tried to untick every role (nothing was changed). */
+    private static bool $no_role = false;
+
+    /** Shows "tick at least one role" on the profile screen after such a save. */
+    public static function role_errors( $errors ): void {
+        if ( self::$no_role && $errors instanceof WP_Error ) {
+            $errors->add( 'seal_no_role', 'Tick at least one role. The account\'s roles were not changed.' );
+        }
     }
 
     // ── Bulk role assignment ───────────────────────────────────────────────────
 
-    /** Adds a "Change role → …" bulk action for each role to the Users list. */
+    /** Adds "Change role → …" (replace), "Add role → …" and "Remove role → …" bulk actions to the Users list. */
     public static function add_bulk_actions( array $actions ): array {
-        foreach ( self::allowed_roles() as $slug => $name ) {
-            $actions[ 'seal_role_' . $slug ] = 'Change role → ' . translate_user_role( $name );
+        foreach ( [ 'seal_role_' => 'Change role → ', 'seal_addrole_' => 'Add role → ', 'seal_rmrole_' => 'Remove role → ' ] as $prefix => $label ) {
+            foreach ( self::allowed_roles() as $slug => $name ) {
+                $actions[ $prefix . $slug ] = $label . translate_user_role( $name );
+            }
         }
         return $actions;
     }
 
     /**
-     * Applies a bulk role change to the ticked users, skipping yourself and anyone you may not edit, and
-     * reports how many changed.
+     * Applies a bulk role change (replace, add or remove) to the ticked users, skipping yourself, anyone you may
+     * not edit, and removals that would leave an account with no role; reports how many changed.
      */
     public static function handle_bulk( string $redirect, string $action, array $user_ids ): string {
-        if ( ! str_starts_with( $action, 'seal_role_' ) ) { return $redirect; }
+        if ( ! preg_match( '/^seal_(role|addrole|rmrole)_(.+)$/', $action, $m ) ) { return $redirect; }
         if ( ! current_user_can( 'promote_users' ) ) { return $redirect; }
 
-        $new_role  = sanitize_key( substr( $action, 10 ) ); // strip 'seal_role_'
+        $mode     = $m[1];
+        $new_role = sanitize_key( $m[2] );
         if ( ! array_key_exists( $new_role, self::allowed_roles() ) ) { return $redirect; }
 
         $changed = 0;
@@ -134,7 +183,18 @@ class SEAL_Module_RoleEditor {
             $uid = (int) $uid;
             if ( ! self::can_change( $uid ) ) { continue; }   // yourself, or an account you may not promote (e.g. an Administrator)
             $u = get_userdata( $uid );
-            if ( $u ) { $u->set_role( $new_role ); $changed++; }
+            if ( ! $u ) { continue; }
+            $has = in_array( $new_role, (array) $u->roles, true );
+            if ( $mode === 'role' ) {
+                $u->set_role( $new_role );
+            } elseif ( $mode === 'addrole' ) {
+                if ( $has ) { continue; }
+                $u->add_role( $new_role );
+            } else {
+                if ( ! $has || count( (array) $u->roles ) < 2 ) { continue; }   // never leave an account with no role
+                $u->remove_role( $new_role );
+            }
+            $changed++;
         }
 
         return add_query_arg( 'seal_role_changed', $changed, $redirect );

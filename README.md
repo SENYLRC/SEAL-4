@@ -1,6 +1,6 @@
 # ILL System — WordPress Plugin
 
-**Version:** 3.15.6  
+**Version:** 3.16.0  
 **Author:** SENYLRC Systems Department  
 **Source:** https://github.com/SENYLRC/SEAL-4 (successor to [SEAL-3](https://github.com/SENYLRC/SEAL-3))  
 

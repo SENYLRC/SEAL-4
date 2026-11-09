@@ -191,7 +191,7 @@ def build(g):
         ["Export Users", "A CSV download of users under the Users menu."],
         ["Catalog Search Header", "The catalog search bar and logo at the top of every page."],
         ["Last Login Tracking", "Records and shows when each user last logged in."],
-        ["Role Editor", "Change a user's ILL role from their profile; bulk-assign roles from the Users list."],
+        ["Role Editor", "Give an account one or more roles from its profile (Role Management checkboxes); bulk change, add or remove roles from the Users list."],
         ["User Approval", "Holds new registrations for approval (section 4.6)."],
         ["Site Footer", "The organization footer from Branding."],
         ["Automatic Fallback (Rota)", ["Lets a borrower name up to two backup libraries. If the lender says No, or never answers, "

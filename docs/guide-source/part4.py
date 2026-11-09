@@ -152,6 +152,11 @@ def build(g):
         "approve Library Staff in their own system on **Manage Accounts**. The approval email links and the WordPress Users screen "
         "(one at a time or in bulk) still work. The person is emailed either way, and the decision is recorded in Change History.",
         "ILL Administrators cannot edit, delete or promote Administrators or other ILL Administrators, and cannot give those roles.",
+        "**Several roles on one account:** open the account under WordPress **Users** and tick every role it should have under "
+        "**Role Management** (for example Administrator and ILL Administrator for a second system administrator); permissions add up. "
+        "WordPress's own single Role list is hidden there. At least one role must stay ticked, and nobody can change their own roles. "
+        "On the Users list, the bulk actions **Add role** and **Remove role** add or take away one role without touching the others; "
+        "**Change role** still replaces them all.",
         "**Lost key or phone:** a person can sign in with a backup code. If those are gone too, an Administrator or ILL Administrator opens their "
         "account under WordPress **Users**, ticks **Reset this user's two-factor authentication** and saves; this removes their keys, authenticator "
         "app and backup codes and emails them. ILL Administrators can't reset Administrators or other ILL Administrators.",

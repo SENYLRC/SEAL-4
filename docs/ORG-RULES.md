@@ -143,7 +143,7 @@ After the alias text is chosen, the request page looks for a library whose Alias
 
 **Use it when**
 
-- The catalog adds extra text after the library name ("Amsterdam Free Library - Adult"): turn on Split so only the part before the "-" or ":" is used.
+- The catalog adds extra text after the library name ("Amsterdam Free Library - Adult"): turn on Split so only the part before the "-", ":" or "/" is used.
 - Several systems share one combined catalog: restrict the search to those systems so a same-named library in another system is never picked.
 - Your directory alias is longer or shorter than the catalog's text: use Starts with or Contains instead of Exactly.
 - Two systems each have a library with the same name: restrict by system.
@@ -156,7 +156,7 @@ After the alias text is chosen, the request page looks for a library whose Alias
 | --- | --- | --- | --- |
 | MVLS and SALS combined catalog | Contains | Yes | mvls,sals |
 
-A copy at "Amsterdam Free Library - Adult" is split at the "-", giving "Amsterdam Free Library". The lookup then finds a library in the MVLS or SALS system whose Alias contains that. A copy with no "-" or ":" finds nothing (No alias match).
+A copy at "Amsterdam Free Library - Adult" is split at the "-", giving "Amsterdam Free Library". The lookup then finds a library in the MVLS or SALS system whose Alias contains that. A copy with no "-", ":" or "/" finds nothing (No alias match).
 
 **Example: One consortium, names that start the same (CDLC)**
 
@@ -185,7 +185,7 @@ A copy location is matched against any MH library whose Alias contains that text
 **Good to know**
 
 - The first library the search finds is the one used. A broad rule (Contains "Albany") can pick the wrong library, so make rules as specific as you can and restrict the systems.
-- Split needs a "-" or ":" in the text. Without one, nothing matches.
+- Split needs a "-", ":" or "/" in the text (it splits at the first one). Without one, nothing matches.
 - A catalog not in this list is matched exactly. If a real library comes back as "No alias match", either correct its Alias on the library record or add a rule here.
 - After any change, test with a real record (see "Testing a change" in the guide).
 
