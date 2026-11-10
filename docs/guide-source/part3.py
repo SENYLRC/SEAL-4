@@ -120,9 +120,10 @@ $illDataKey = 'base64-of-32-random-bytes';""")
         "“don't send” writes each held email to the log instead.",
         "Subject lines and the heading, message and closing of each email come from **Email Subjects & Text** in WordPress (section 4.3); blank boxes use the defaults.",
         "Message bodies are sent base64-encoded, so long HTML lines are never broken by mail servers.",
-        "The server's mail program (sendmail, or Postfix as a relay) must be able to deliver for your From address. "
-        "The scripts don't run inside WordPress, so a WordPress mail plugin (FluentSMTP, WP Mail SMTP…) does not send for them: "
-        "point Postfix at the same SMTP service. `php cron_config.php --check-system` checks the mail program, PHP and its extensions.",
+        "By default the scripts send with the server's mail program (sendmail, or Postfix as a relay), which must be able to deliver "
+        "for your From address. To use the site's WordPress mail plugin instead (FluentSMTP, WP Mail SMTP…), set "
+        "`ILL_MAIL_VIA = 'wordpress'` and `ILL_WP_PATH` (the folder with wp-load.php) in `cron_local.php`, and run the jobs as the "
+        "web server user, not root. `php cron_config.php --check-system` checks the mail setup, PHP and its extensions.",
     ])
     g.h3("Data retention (anonymize.php)")
     g.p("Keeps patron-related details only as long as they are needed. Three steps, each with a limit set under **ILL System → Cron Jobs → "

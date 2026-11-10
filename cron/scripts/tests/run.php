@@ -32,6 +32,7 @@ copy("$S/capture_mail.sh", "$T/capture_mail.sh"); chmod("$T/capture_mail.sh", 07
 copy("$S/test_closures.php", "$T/test_closures.php");
 copy("$S/test_nager_filter.php", "$T/test_nager_filter.php");
 copy("$S/test_system_check.php", "$T/test_system_check.php");
+copy("$S/test_mail_wordpress.php", "$T/test_mail_wordpress.php");
 copy("$S/test_business_days.php", "$T/test_business_days.php");
 
 function ill_cron_columns_for_test(): array {
@@ -386,6 +387,26 @@ t('old PHP: problem', ($b['PHP'][0] ?? '') === 'fail');
 t('world-readable ill_db.inc: warning with chmod 600', ($b['ill_db.inc'][0] ?? '') === 'warn' && str_contains($b['ill_db.inc'][1], 'chmod 600'));
 $r = run('cron_config.php', [], [], ['--check-system']);
 t('--check-system runs without a database (mail program found)', str_contains($r['out'], 'Server (command-line PHP') && (bool) preg_match('/Mail program:\s+ok/', $r['out']) && clean($r), $r['out']);
+
+echo "=== ILL_MAIL_VIA = 'wordpress' (send through the site's mail plugin, e.g. FluentSMTP) ===\n";
+$j = last_json(run('test_mail_wordpress.php', [], [], ['send']));
+$m = $j['sent'][0] ?? [];
+t('WordPress loaded in global scope ($table_prefix kept)', ($j['prefix_global'] ?? false) === true);
+t('email goes through wp_mail(), not mail()', ($j['html_ok'] ?? false) && count($j['sent'] ?? []) === 2 && ($m['to'] ?? '') === 'lender@library.org', json_encode($j));
+t('HTML wrapped in the email layout, not base64 (PHPMailer encodes)', str_contains($m['message'] ?? '', 'Please answer') && str_contains($m['message'] ?? '', '<html') && !str_contains(implode("\n", $m['headers'] ?? []), 'base64'), substr(json_encode($m), 0, 400));
+t('headers kept (From, Cc, Content-Type); MIME-Version / encoding left to WordPress', in_array('Cc: borrower@library.org', $m['headers'] ?? [], true) && in_array('Content-Type: text/html; charset=UTF-8', $m['headers'] ?? [], true)
+    && !preg_grep('/^(MIME-Version|Content-Transfer-Encoding)/i', $m['headers'] ?? []), json_encode($m['headers'] ?? null));
+t('plain-text email gets a text/plain Content-Type', in_array('Content-Type: text/plain; charset=UTF-8', $j['sent'][1]['headers'] ?? [], true));
+t('--check-system names the mail plugin', ($j['check'][0] ?? '') === 'ok' && str_contains($j['check'][2] ?? '', 'fluent-smtp'), json_encode($j['check'] ?? null));
+t('WordPress\'s own output is kept out of the log', !str_contains($j['log'] ?? '', 'must not reach'));
+$j = last_json(run('test_mail_wordpress.php', [], [], ['redirect']));
+t('Email test mode (redirect) still applies: one email to the tester, [TEST], Cc dropped', count($j['sent'] ?? []) === 2 && ($j['sent'][0]['to'] ?? '') === 'tester@library.org'
+    && str_starts_with($j['sent'][0]['subject'] ?? '', '[TEST]') && !preg_grep('/^Cc:/i', $j['sent'][0]['headers'] ?? []), json_encode($j['sent'][0] ?? null));
+$j = last_json(run('test_mail_wordpress.php', [], [], ['failing']));
+t('wp_mail() failure: ill_mail() returns false and the reason is logged', ($j['html_ok'] ?? true) === false && str_contains($j['log'] ?? '', 'SMTP connect() failed'), $j['log'] ?? '');
+$j = last_json(run('test_mail_wordpress.php', [], [], ['nopath']));
+t('WordPress not found: nothing sent, false, logged; --check-system says so', ($j['html_ok'] ?? true) === false && !($j['sent'] ?? [1])
+    && str_contains($j['log'] ?? '', 'not found') && ($j['check'][0] ?? '') === 'fail', json_encode($j));
 
 echo "=== cron_config.php --check-db (tables and columns) ===\n";
 $cols = static fn(array $names) => array_map(fn($n) => ['Field' => $n], $names);

@@ -9,6 +9,11 @@ define('ILL_NOC_EMAIL', 'noc@library.org');              // told when something 
 define('ILL_STATS_TO', 'ill@library.org');               // weekly statistics (comma separated)
 define('ILL_BASE_URL', 'https://ill.library.org');       // the WordPress site, for links in emails (no trailing slash)
 define('ILL_ILLIAD_SHIP_TEXT', 'Library Delivery');      // how ILLiad-filled items ship
+// How email is sent. Default: PHP's mail() through the server's mail program (Postfix / sendmail). To send through
+// WordPress's mail plugin instead (FluentSMTP, WP Mail SMTP…), set both lines below and run the jobs as the web
+// server user (e.g. www-data), not root. Check with: php cron_config.php --check-system
+// define('ILL_MAIL_VIA', 'wordpress');
+// define('ILL_WP_PATH', '/var/www/html');               // the folder with wp-load.php
 // define('ILL_TIMEZONE', 'America/New_York');
 // define('ILL_LOG_FILE', '/var/log/ill_cron.log');
 // define('ILL_HOLIDAY_REGION', 'US-NY');                // state for the holiday calendar

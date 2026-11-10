@@ -78,7 +78,7 @@ class SEAL_System_Check {
         }
 
         $out[] = self::f( 'info', 'Scheduled jobs use the command-line PHP',
-            'It can have different extensions and needs its own mail program: the jobs don\'t run inside WordPress, so a mail plugin (FluentSMTP, WP Mail SMTP…) doesn\'t send for them.',
+            'It can have different extensions. By default the jobs send with the server\'s mail program, not a WordPress mail plugin; to use the plugin (FluentSMTP, WP Mail SMTP…) set ILL_MAIL_VIA = \'wordpress\' and ILL_WP_PATH in cron_local.php.',
             'On the server, in the scripts folder: php cron_config.php --check-system' );
         return $out;
     }
