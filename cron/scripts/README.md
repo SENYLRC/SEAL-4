@@ -93,6 +93,11 @@ the saved rows once, automatically), check `crontab -l` shows the new names, and
 2. Copy everything in this folder except `tests/` and `README.md` into `/var/www/<code>_script/` (keep the server's `ill_db.inc`). For a new organization, create `cron_local.php` from `cron_local.php.example` first.
 3. Add the WordPress login (`$wpDb…` lines) to `ill_db.inc`. Without it the jobs still run, but ignore Closure Dates and Email test mode.
 4. Create the log file for the user that runs cron: `sudo touch /var/log/ill_cron.log && sudo chown <cron user> /var/log/ill_cron.log`.
+   Then check the server as that user: `php cron_config.php --check-system` (no database login needed). It lists the PHP version,
+   extensions (mysqli, openssl, sodium…), the **mail program** PHP's `mail()` uses, the log file and `ill_db.inc`, and says what to
+   install for anything missing. The jobs send through the server's mail program, not WordPress: a WordPress mail plugin such as
+   FluentSMTP or WP Mail SMTP does **not** send for them, so install Postfix (or `msmtp-mta`) as a relay to the same SMTP service.
+   `--check-db` prints the same lines before the database checks.
 5. Run each script once by hand as that user and read the output and `/var/log/ill_cron.log`. Do the read-only ones first (`stats_weekly.php`, then the ILLiad checks). The reminder, expire and due-date scripts send real email to real libraries.
 6. Optionally switch the crontab redirect from `>/dev/null 2>&1` to `>> /var/log/ill_cron.log 2>&1` (ILL -> Cron Jobs builds the block for you).
 7. Rollback: restore the `.bak` folder.

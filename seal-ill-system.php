@@ -3,7 +3,7 @@
  * Plugin Name:       Southeastern ILL System
  * Plugin URI:        https://github.com/SENYLRC/SEAL-4
  * Description:       Complete Interlibrary Loan management system. Includes the ILL request workflow, lender response, renewals, statistics, user profile fields, login redirect, Terms of Service gate, catalog search header, dashboard quick links, and user CSV export — all in one plugin, fully configurable for any region without code changes.
- * Version:           3.16.0
+ * Version:           3.17.0
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Zachary Spalding (SENYLRC) & Claude (Anthropic)
@@ -19,7 +19,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'SEAL_ILL_VERSION',    '3.16.0' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
+define( 'SEAL_ILL_VERSION',    '3.17.0' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
 define( 'SEAL_ILL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEAL_ILL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -251,6 +251,7 @@ require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-router.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-rota.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-secret.php';   // ILLiad API keys encrypted with ILL_DATA_KEY
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-db-schema.php';   // expected tables / columns; Database check
+require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-system-check.php';   // PHP, extensions, mail; shown in the Database check
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-resend.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-emails.php';   // editable subjects; branded account emails
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-setup-reminders.php';   // reminders before the set-password link expires

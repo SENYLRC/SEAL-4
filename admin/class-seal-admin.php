@@ -662,7 +662,8 @@ class SEAL_Admin {
     public static function render_db_check(): void {
         if ( ! current_user_can( 'manage_options' ) ) { return; }
         $url = add_query_arg( [ 'page' => self::PAGES['database'], 'seal_dbcheck' => 1 ], admin_url( 'admin.php' ) ) . '#db-check';
-        echo '<h2 id="db-check">Database check</h2><p style="max-width:740px">Checks that the ILL database has the tables and columns this version uses, '
+        echo '<h2 id="db-check">Database check</h2><p style="max-width:740px">Checks that this server has what the plugin needs (PHP version, PHP extensions, a way to send email), '
+           . 'and that the ILL database has the tables and columns this version uses, '
            . 'with sizes and settings that work on any MySQL server, and looks for a few data problems (duplicate LOC codes, libraries with no ILL email). '
            . 'It only reads. Each problem comes with the SQL that fixes it; run that yourself, after a backup. Run it after setting up a new site, '
            . 'after moving the database, and after upgrading the plugin.</p>';
@@ -675,7 +676,7 @@ class SEAL_Admin {
             echo '<p><a class="button button-primary" href="' . esc_url( $url ) . '">Run database check</a></p>';
             return;
         }
-        $found  = SEAL_DB_Schema::check();
+        $found  = array_merge( SEAL_System_Check::check(), SEAL_DB_Schema::check() );
         $counts = array_count_values( array_column( $found, 'level' ) ) + [ 'fail' => 0, 'warn' => 0, 'info' => 0, 'ok' => 0 ];
         $icon   = [ 'ok' => [ '&#10004;', '#0a5c2e', 'OK' ], 'info' => [ '&#9432;', '#1d4f91', 'Note' ], 'warn' => [ '&#9888;', '#7a4b00', 'Warning' ], 'fail' => [ '&#10006;', '#8a1f1f', 'Problem' ] ];
         $sum    = $counts['fail'] ? $counts['fail'] . ' problem' . ( $counts['fail'] === 1 ? '' : 's' ) . ' to fix' : 'No problems';

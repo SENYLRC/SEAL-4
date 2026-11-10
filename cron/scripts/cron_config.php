@@ -817,9 +817,105 @@ function ill_cron_columns(): array
     ];
 }
 
+/**
+ * What this server's command-line PHP has (the PHP the cron jobs run with, which can differ from the web server's):
+ * PHP version, extensions, the mail program PHP's mail() hands messages to, and the files the jobs write to.
+ */
+function ill_system_facts(): array
+{
+    $sendmail = trim((string) ini_get('sendmail_path'));
+    $bin      = $sendmail === '' ? '' : (string) strtok($sendmail, " \t");
+    $logDir   = dirname(ILL_LOG_FILE);
+    $uid      = function_exists('posix_geteuid') ? posix_geteuid() : null;
+    return [
+        'php'          => PHP_VERSION,
+        'ext'          => array_fill_keys(array_map('strtolower', get_loaded_extensions()), true),
+        'sendmail'     => $sendmail,
+        'sendmail_ok'  => $bin !== '' && is_file($bin) && is_executable($bin),
+        'email_mode'   => (string) ILL_EMAIL_MODE,
+        'log'          => ILL_LOG_FILE,
+        'log_ok'       => is_file(ILL_LOG_FILE) ? is_writable(ILL_LOG_FILE) : is_writable($logDir),
+        'cache_dir'    => __DIR__,
+        'cache_ok'     => is_writable(__DIR__),
+        'auto_fetch'   => (bool) ILL_HOLIDAY_AUTO_FETCH,
+        'db_inc'       => ILL_DB_INC,
+        'db_inc_ok'    => is_readable(ILL_DB_INC),
+        'db_inc_world' => is_file(ILL_DB_INC) && (fileperms(ILL_DB_INC) & 0004) !== 0,
+        'timezone'     => date_default_timezone_get(),
+        'tz_ini'       => (string) ini_get('date.timezone'),
+        'user'         => $uid === null ? (string) getenv('USER') : ((posix_getpwuid($uid)['name'] ?? (string) $uid)),
+    ];
+}
+
+/**
+ * Findings for ill_system_facts(): [level, label, text], level ok | info | warn | fail. No checks touch the
+ * network or a database, so this also runs before ill_db.inc is filled in.
+ */
+function ill_system_findings(array $f): array
+{
+    $out = [];
+    $out[] = version_compare($f['php'], '8.0', '>=')
+        ? ['ok', 'PHP', $f['php'] . ' (command line, as user ' . ($f['user'] !== '' ? $f['user'] : 'unknown') . ')']
+        : ['fail', 'PHP', $f['php'] . ': the scripts need PHP 8.0 or newer'];
+    $ext = [
+        'mysqli'  => ['fail', 'database connections (php-mysql package)'],
+        'openssl' => ['fail', 'encrypted database connections and ILLiad keys (part of PHP on most systems)'],
+        'sodium'  => ['warn', 'reading ILLiad keys the plugin encrypted with sodium; without it they read as blank (part of PHP 7.2+ on most systems)'],
+        'json'    => ['fail', 'ILLiad answers and holiday lists'],
+        'ctype'   => ['warn', 'input checks'],
+        'curl'    => ['info', 'ILLiad and holiday requests (php-curl package); without it PHP\'s own HTTPS streams are used'],
+    ];
+    foreach ($ext as $name => [$level, $why]) {
+        $out[] = isset($f['ext'][$name]) ? ['ok', 'Extension ' . $name, 'loaded'] : [$level, 'Extension ' . $name, 'MISSING, needed for ' . $why];
+    }
+    if ($f['sendmail_ok']) {
+        $out[] = ['ok', 'Mail program', $f['sendmail']];
+    } else {
+        $out[] = [$f['email_mode'] === 'off' ? 'warn' : 'fail', 'Mail program',
+            ($f['sendmail'] === '' ? 'sendmail_path is not set' : $f['sendmail'] . ' NOT found or not executable')
+            . ': PHP\'s mail() cannot send, so reminders, expiry and due-date emails are lost (the requests are still updated). '
+            . 'Install a mail program that relays for your From address, e.g. Postfix (apt install postfix) or msmtp-mta.'
+            . ($f['email_mode'] === 'off' ? ' (Nothing is sent now: ILL_EMAIL_MODE is \'off\'.)' : '')];
+    }
+    $out[] = $f['log_ok'] ? ['ok', 'Log file', $f['log'] . ' writable'] : ['fail', 'Log file', $f['log'] . ' NOT writable by this user (set ILL_LOG_FILE in cron_local.php or fix the permissions)'];
+    if ($f['auto_fetch']) {
+        $out[] = $f['cache_ok'] ? ['ok', 'Holiday cache', $f['cache_dir'] . ' writable']
+            : ['warn', 'Holiday cache', $f['cache_dir'] . ' NOT writable: the federal holiday list is fetched on every run instead of cached'];
+    }
+    if (!$f['db_inc_ok']) {
+        $out[] = ['fail', 'ill_db.inc', $f['db_inc'] . ' missing or not readable by this user (database logins)'];
+    } else {
+        $out[] = $f['db_inc_world'] ? ['warn', 'ill_db.inc', 'readable by every user on the server: chmod 600 ' . $f['db_inc']] : ['ok', 'ill_db.inc', 'readable, not world-readable'];
+    }
+    $out[] = $f['tz_ini'] !== '' ? ['ok', 'Time zone', $f['timezone']]
+        : ['warn', 'Time zone', $f['timezone'] . ' (date.timezone not set in php.ini: due dates and business days use this zone)'];
+    return $out;
+}
+
+/** Prints ill_system_findings() as "Label: RESULT text" lines and returns how many problems (fail) there are. */
+function ill_print_system_check(): int
+{
+    $word  = ['ok' => 'ok', 'info' => 'note', 'warn' => 'WARNING', 'fail' => 'PROBLEM'];
+    $fails = 0;
+    echo "Server (command-line PHP, used by the cron jobs):\n";
+    foreach (ill_system_findings(ill_system_facts()) as [$level, $label, $text]) {
+        $fails += $level === 'fail' ? 1 : 0;
+        echo '  ' . str_pad($label . ':', 20) . str_pad($word[$level], 9) . $text . "\n";
+    }
+    echo $fails ? "  $fails problem(s) to fix before the jobs can work.\n\n" : "  No problems.\n\n";
+    return $fails;
+}
+
+// `php cron_config.php --check-system` (from the scripts folder): what the cron jobs need from this server (PHP,
+// extensions, mail program, log file). Needs no database login and changes nothing. --check-db prints it too.
+if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__ && in_array('--check-system', $argv ?? [], true)) {
+    exit(ill_print_system_check() ? 1 : 0);
+}
+
 // `php cron_config.php --check-db` (from the scripts folder): connect to both databases the way the jobs do and show
 // whether each connection is encrypted. Changes nothing.
 if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__ && in_array('--check-db', $argv ?? [], true)) {
+    ill_print_system_check();
     $cipher = static function ($db): string {
         $r = $db ? mysqli_query($db, "SHOW SESSION STATUS LIKE 'Ssl_cipher'") : false;
         $row = $r ? mysqli_fetch_row($r) : null;

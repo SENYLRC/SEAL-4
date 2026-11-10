@@ -120,6 +120,9 @@ def build(g):
         "with the SQL that fixes them, to run yourself after a backup. Run it after setting up a site, after moving the database to another "
         "server, and after each plugin update.")
     g.table(["It checks", "Why it matters"], [
+        ["Server", "PHP 8.0 or newer; the PHP extensions the plugin uses (mysqli, openssl, mbstring, simplexml, json; sodium optional), "
+         "each with the package to install; and a way to send email: a mail plugin (named, e.g. FluentSMTP) or the server's mail program. "
+         "A reminder that the scheduled scripts use the command-line PHP: check it with `php cron_config.php --check-system`."],
         ["Connection and encryption", "Whether the site can reach the database, and whether the traffic is encrypted (TLS)."],
         ["Strict SQL mode", "With strict mode (MySQL's default) the database refuses a row that leaves out a required value or holds one "
          "that doesn't fit, instead of guessing. The other findings say which columns matter."],

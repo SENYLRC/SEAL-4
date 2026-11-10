@@ -31,6 +31,7 @@ copy("$S/curl", "$T/curl/curl"); chmod("$T/curl/curl", 0755);
 copy("$S/capture_mail.sh", "$T/capture_mail.sh"); chmod("$T/capture_mail.sh", 0755);   // (exec bit is set on the temp copy)
 copy("$S/test_closures.php", "$T/test_closures.php");
 copy("$S/test_nager_filter.php", "$T/test_nager_filter.php");
+copy("$S/test_system_check.php", "$T/test_system_check.php");
 copy("$S/test_business_days.php", "$T/test_business_days.php");
 
 function ill_cron_columns_for_test(): array {
@@ -373,6 +374,18 @@ $r = run('test_nager_filter.php');
 $j = last_json($r);
 t('keeps nationwide and New York holidays only, one entry per date', $j === ['2026-01-01', '2026-10-12'], $r['out']);
 t('drops observances, other states\' holidays, school-only days and malformed dates', is_array($j) && !array_intersect($j, ['2026-02-12', '2026-04-03', '2026-05-08', 'garbage']));
+
+echo "=== cron_config.php --check-system (server requirements) ===\n";
+$j = last_json(run('test_system_check.php'));
+$g = $j['good'] ?? []; $b = $j['bad'] ?? [];
+t('a complete server: every line ok', $g && !array_filter($g, fn($x) => $x[0] !== 'ok'), json_encode($g));
+t('no mail program: problem, says emails are lost and to install Postfix', ($b['Mail program'][0] ?? '') === 'fail' && str_contains($b['Mail program'][1], 'Postfix'), json_encode($b['Mail program'] ?? null));
+t('no mail program with ILL_EMAIL_MODE = off (nothing sent): warning', ($j['off']['Mail program'][0] ?? '') === 'warn');
+t('missing mysqli: problem; missing curl / sodium: note / warning', ($b['Extension mysqli'][0] ?? '') === 'fail' && ($b['Extension curl'][0] ?? '') === 'info' && ($b['Extension sodium'][0] ?? '') === 'warn');
+t('old PHP: problem', ($b['PHP'][0] ?? '') === 'fail');
+t('world-readable ill_db.inc: warning with chmod 600', ($b['ill_db.inc'][0] ?? '') === 'warn' && str_contains($b['ill_db.inc'][1], 'chmod 600'));
+$r = run('cron_config.php', [], [], ['--check-system']);
+t('--check-system runs without a database (mail program found)', str_contains($r['out'], 'Server (command-line PHP') && (bool) preg_match('/Mail program:\s+ok/', $r['out']) && clean($r), $r['out']);
 
 echo "=== cron_config.php --check-db (tables and columns) ===\n";
 $cols = static fn(array $names) => array_map(fn($n) => ['Field' => $n], $names);
