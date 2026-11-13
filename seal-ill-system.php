@@ -3,7 +3,7 @@
  * Plugin Name:       Southeastern ILL System
  * Plugin URI:        https://github.com/SENYLRC/SEAL-4
  * Description:       Complete Interlibrary Loan management system. Includes the ILL request workflow, lender response, renewals, statistics, user profile fields, login redirect, Terms of Service gate, catalog search header, dashboard quick links, and user CSV export — all in one plugin, fully configurable for any region without code changes.
- * Version:           3.18.0
+ * Version:           3.20.1
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Zachary Spalding (SENYLRC) & Claude (Anthropic)
@@ -19,7 +19,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 
-define( 'SEAL_ILL_VERSION',    '3.18.0' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
+define( 'SEAL_ILL_VERSION',    '3.20.1' );   // bump on every deploy that changes CSS/JS: it is the ?ver= cache-buster
 define( 'SEAL_ILL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SEAL_ILL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -158,6 +158,8 @@ function seal_config( string $key ): string {
         'module_role_editor'      => '1',
         'module_user_approval'    => '1',
         'module_site_footer'      => '0',
+        'module_public_request'   => '0',   // public "Request a Book" form: [ill_book_request] shortcode
+        'pr_systems'              => '',    // library-system codes (comma list) whose libraries the form offers; '' = none (ILL System → Public Requests)
         'module_rota'             => '0',   // automatic lender fallback ("rota") on decline / 5-business-day expiry
         'rota_max_candidates'     => '3',   // total libraries in one rota chain (the borrower's pick + fallbacks); hard-capped at 3
         'rota_retention_days'     => '180', // finished rota tracking rows (filled/cancelled/exhausted) older than this are deleted daily
@@ -270,6 +272,7 @@ require_once SEAL_ILL_PLUGIN_DIR . 'includes/modules/class-seal-module-last-logi
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/modules/class-seal-module-role-editor.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/modules/class-seal-module-user-approval.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/modules/class-seal-module-site-footer.php';
+require_once SEAL_ILL_PLUGIN_DIR . 'includes/modules/class-seal-module-public-request.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-totp.php';
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/class-seal-webauthn.php';   // security keys / passkeys (bundled lbuchs/webauthn, loaded on first use)
 require_once SEAL_ILL_PLUGIN_DIR . 'includes/modules/class-seal-module-login-screen.php';
@@ -311,6 +314,8 @@ add_action( 'plugins_loaded', function () {
     if ( seal_config( 'module_role_editor'     ) === '1' ) SEAL_Module_RoleEditor::init();
     if ( seal_config( 'module_user_approval'   ) === '1' ) SEAL_Module_UserApproval::init();
     if ( seal_config( 'module_site_footer'     ) === '1' ) SEAL_Module_SiteFooter::init();
+    if ( seal_config( 'module_public_request'  ) === '1' ) SEAL_Module_PublicRequest::init();
+    else add_shortcode( SEAL_Module_PublicRequest::SHORTCODE, '__return_empty_string' );   // module off: the page shows no form, not the raw shortcode
 
     // Security modules. Emergency off switch: define( 'ILL_DISABLE_SECURITY', true ) in wp-config.php (see seal_security_disabled()).
     if ( ! seal_security_disabled() ) {

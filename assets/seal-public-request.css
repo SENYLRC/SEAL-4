@@ -1,0 +1,51 @@
+/**
+ * seal-public-request.css — the public "Request a Book" form ([ill_book_request], SEAL_Module_PublicRequest).
+ *
+ * Kept apart from seal-style.css on purpose: that file also carries theme overrides for the ILL pages
+ * (page/content backgrounds, header colour, hidden page title) which must not reach an ordinary site page.
+ * Everything here is scoped to .seal-pr, so the theme's background, fonts and header are left alone.
+ */
+
+/* ── Alerts (errors, "request sent", "not available") ── */
+.seal-pr .seal-alert,
+.seal-pr-msg.seal-alert { padding: 10px 14px; margin-bottom: 16px; border-radius: 4px; border-left: 4px solid transparent; }
+.seal-pr .seal-alert-success, .seal-pr-msg.seal-alert-success { background: #d4edda; color: #155724; border-color: #28a745; }
+.seal-pr .seal-alert-error,   .seal-pr-msg.seal-alert-error   { background: #f8d7da; color: #721c24; border-color: #dc3545; }
+.seal-pr .seal-alert-info,    .seal-pr-msg.seal-alert-info    { background: #d1ecf1; color: #0c5460; border-color: #17a2b8; }
+
+/* ── Screen-reader only ── */
+.seal-pr .seal-sr-only {
+    position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ── Form ── */
+.seal-pr { max-width: 36rem; }
+.seal-pr-form .seal-pr-row { display: flex; flex-direction: column; margin: 0 0 16px; }
+.seal-pr-form label,
+.seal-pr-form legend { font-weight: 600; margin-bottom: 4px; }
+.seal-pr-form input[type=text],
+.seal-pr-form input[type=email],
+.seal-pr-form input[type=tel],
+.seal-pr-form select,
+.seal-pr-form textarea {
+    padding: 8px 10px; border: 1px solid #767676; border-radius: 6px; font-size: 1rem; max-width: 100%;
+}
+.seal-pr-form [aria-invalid=true] { border-color: #b32d2e; border-width: 2px; }
+.seal-pr-contact { border: 1px solid #c3c4c7; border-radius: 6px; padding: 10px 14px 0; margin: 0 0 16px; }
+.seal-pr-contact[aria-invalid=true] { border-color: #b32d2e; border-width: 2px; }
+.seal-pr-form textarea { font-family: inherit; resize: vertical; }
+.seal-pr-optional { font-weight: normal; opacity: .8; }
+.seal-pr-row .seal-pr-hint { margin: 4px 0 0; }
+.seal-pr-hint, .seal-pr-note { font-size: .9rem; opacity: .85; margin: 0 0 10px; }
+.seal-pr-err { display: block; color: #b32d2e; font-size: .9rem; margin-top: 4px; }
+.seal-pr-hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+/* ── Submit button ── */
+.seal-pr .seal-pr-submit {
+    display: inline-block; padding: 8px 16px; border-radius: 5px; border: none; cursor: pointer;
+    font-size: 1rem; line-height: 1.4; font-weight: 600;
+    background: var(--seal-brand, #4a4180); color: #fff;
+}
+.seal-pr .seal-pr-submit:hover { background: var(--seal-brand-dark, #1d1f40); color: #fff; }
+.seal-pr .seal-pr-submit:focus-visible { outline: 3px solid var(--seal-brand, #4a4180); outline-offset: 2px; }

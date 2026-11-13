@@ -39,7 +39,7 @@ class SEAL_Audit {
     ];
 
     /** Settings groups recorded as security settings: group => screen name ('seal_sec_<tab>' is added from the Security tabs). */
-    const SETTING_GROUPS = [ 'seal_ill_modules' => 'Modules', 'seal_ill_users' => 'Users & Registration', 'seal_ill_cron' => 'Cron Jobs' ];
+    const SETTING_GROUPS = [ 'seal_ill_modules' => 'Modules', 'seal_ill_users' => 'Users & Registration', 'seal_ill_cron' => 'Cron Jobs', 'seal_ill_pubreq' => 'Public Requests' ];
 
     /** Options whose value is never shown. */
     const SECRET = [ 'seal_invite_code' ];
