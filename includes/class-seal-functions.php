@@ -266,8 +266,9 @@ class SEAL_Functions {
      * @param string $subject    Email subject.
      * @param string $html_body  HTML body content.
      * @param bool   $alert      If true, CC the support_emails list as well.
+     * @param string $reply_to   Optional Reply-To address (e.g. the patron on a public book request).
      */
-    public static function send_email( string $to, string $subject, string $html_body, bool $alert = false, bool $system_alert = false ): bool {
+    public static function send_email( string $to, string $subject, string $html_body, bool $alert = false, bool $system_alert = false, string $reply_to = '' ): bool {
         // Strip newlines from header values to prevent email header injection
         $from_name  = str_replace( [ "\r", "\n" ], '', seal_config( 'email_from_name' ) );
         if ( $from_name === '' ) {
@@ -285,6 +286,10 @@ class SEAL_Functions {
             'Content-Type: text/html; charset=UTF-8',
             "From: {$from_name} <{$from_email}>",
         ];
+        $reply_to = sanitize_email( str_replace( [ "\r", "\n" ], '', $reply_to ) );
+        if ( $reply_to !== '' && is_email( $reply_to ) ) {
+            $headers[] = "Reply-To: {$reply_to}";
+        }
 
         // CC support addresses on alert emails
         if ( $alert ) {

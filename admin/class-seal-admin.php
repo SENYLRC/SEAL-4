@@ -9,6 +9,7 @@
  *   4. Search & Catalog         — IndexData/MKWS URLs, category list
  *   5. Users & Registration     — system dropdown, TOS, login redirect
  *   6. Modules                  — enable/disable each merged feature
+ *   7. Public Requests          — which library systems take part in the public "Request a Book" form
  *
  * @author  Zachary Spalding (SENYLRC) & Claude (Anthropic)
  * @version 3.2.0
@@ -25,6 +26,7 @@ class SEAL_Admin {
         'search'   => 'seal_ill_search',
         'users'    => 'seal_ill_users',
         'modules'  => 'seal_ill_modules',
+        'pubreq'   => 'seal_ill_pubreq',
         'rules'    => 'seal_ill_rules',
         'cron'     => 'seal_ill_cron',    // own group: saving one screen must not blank the other's settings
         'subjects' => 'seal_ill_subjects',
@@ -36,6 +38,7 @@ class SEAL_Admin {
         'search'   => 'seal-ill-search',
         'users'    => 'seal-ill-users',
         'modules'  => 'seal-ill-modules',
+        'pubreq'   => 'seal-ill-pubreq',
         'rules'    => 'seal-ill-rules',
         'cron'     => 'seal-ill-cron',
         'subjects' => 'seal-ill-subjects',
@@ -62,6 +65,7 @@ class SEAL_Admin {
             self::PAGES['search']      => [ '🔍 Search & Catalog',    'render_search'    ],
             self::PAGES['users']       => [ '👤 Users & Registration','render_users'     ],
             self::PAGES['modules']     => [ '🧩 Modules',             'render_modules'   ],
+            self::PAGES['pubreq']      => [ '📚 Public Requests',     'render_pubreq'    ],
             self::PAGES['rules']       => [ '⚖️ Org Rules',           'render_rules'     ],
             self::PAGES['cron']        => [ '⏰ Cron Jobs',           'render_cron'      ],
             'seal-ill-routes'          => [ '🗺️ Routes',              'render_routes'    ],
@@ -83,6 +87,7 @@ class SEAL_Admin {
         self::reg_search();
         self::reg_users();
         self::reg_modules();
+        self::reg_pubreq();
         self::reg_rules();
         self::reg_cron();
     }
@@ -444,6 +449,7 @@ class SEAL_Admin {
             'seal_module_role_editor'     => 'Role Editor — change user roles from profile + bulk assign from Users list',
             'seal_module_user_approval'   => 'User Approval — hold new registrations pending until admin approves',
             'seal_module_site_footer'     => 'Site Footer — organization footer (logo, address, links, copyright) on every page',
+            'seal_module_public_request'  => 'Public Book Requests — a "Request a Book" form for patrons, no login needed (shortcode <code>[ill_book_request]</code>). Choose libraries under <strong>Public Requests</strong>.',
             'seal_module_rota'             => 'Automatic Fallback (Rota) — when a lender declines or never answers, move the request to the next available library automatically. Borrower opts in per request.',
         ];
         foreach ( $modules as $k => $label ) {
@@ -454,6 +460,17 @@ class SEAL_Admin {
         foreach ( $modules as $k => $label ) {
             add_settings_field( $k, $label, [ __CLASS__, 'field_toggle' ], $p, 'seal_mod_sec', [ 'name' => $k, 'desc' => '', 'label_for' => $k ] );
         }
+    }
+
+    /** Public Requests: which library systems' libraries are offered on the public "Request a Book" form. */
+    private static function reg_pubreq(): void {
+        $g = self::GROUPS['pubreq']; $p = self::PAGES['pubreq'];
+        register_setting( $g, 'seal_pr_systems', [ 'sanitize_callback' => [ __CLASS__, 'san_pr_systems' ] ] );
+        add_settings_section( 'seal_pr_sec', 'Participating Library Systems', fn() => print '<p>Choose the library systems that take part in the public <strong>Request a Book</strong> form (shortcode <code>[ill_book_request]</code>). '
+            . 'Only libraries in a checked system appear in the form\'s <em>Pick up at</em> list, and requests are emailed to that library\'s ILL email address. '
+            . 'A library also has to be an ILL participant and have an ILL email address; edit those in the <a href="' . esc_url( home_url( '/adminlib' ) ) . '">Library Directory</a>. '
+            . 'No system is checked at first, so the form offers no libraries until you opt one in.</p>', $p );
+        add_settings_field( 'seal_pr_systems', 'Library systems', [ __CLASS__, 'field_pr_systems' ], $p, 'seal_pr_sec' );
     }
 
     // ── Shared field adder ────────────────────────────────────────────────────
@@ -522,6 +539,7 @@ class SEAL_Admin {
                 [self::PAGES['search'],  '🔍','Search & Catalog'],
                 [self::PAGES['users'],   '👤','Users & Registration'],
                 [self::PAGES['modules'], '🧩','Modules'],
+                [self::PAGES['pubreq'],  '📚','Public Requests'],
                 [self::PAGES['rules'],   '⚖️','Org Rules'],
                 [self::PAGES['cron'],    '⏰','Cron Jobs'],
                 ['seal-ill-security',    '🛡️','Security'],
@@ -753,6 +771,15 @@ class SEAL_Admin {
     public static function render_cron():     void { self::tab('cron','⏰ Cron Jobs','Save Cron Jobs','','info', [ 'SEAL_Admin', 'render_cron_after' ]); }
     /** Settings screen: prints the Modules tab (fields registered in reg_modules()) through tab(). */
     public static function render_modules():  void { self::tab('modules','🧩 Modules','Save Modules'); }
+
+    /** Settings screen: Public Requests (fields registered in reg_pubreq()), with the module's on/off state. */
+    public static function render_pubreq(): void {
+        $on = seal_config( 'module_public_request' ) === '1';
+        $notice = $on
+            ? 'The <strong>Public Book Requests</strong> module is <strong>on</strong>. Put <code>[ill_book_request]</code> on a page to show the form.'
+            : 'The <strong>Public Book Requests</strong> module is <strong>off</strong>, so the form is not shown anywhere. Turn it on under <strong>Modules</strong>; these settings are kept either way.';
+        self::tab( 'pubreq', '📚 Public Requests', 'Save Public Requests', $notice, $on ? 'info' : 'warning' );
+    }
 
     /**
      * Shared frame for a settings screen: heading, optional notice, the options.php form with its sections and
@@ -1216,6 +1243,87 @@ class SEAL_Admin {
         if ( ! isset( $_GET['page'] ) || ! in_array( sanitize_key( wp_unslash( $_GET['page'] ) ), [ self::PAGES['rules'], self::PAGES['cron'] ], true ) ) { return; }
         wp_enqueue_style(  'seal-rules-editor', SEAL_ILL_PLUGIN_URL . 'assets/seal-rules-editor.css', [], SEAL_ILL_VERSION );
         wp_enqueue_script( 'seal-rules-editor', SEAL_ILL_PLUGIN_URL . 'assets/js/seal-rules-editor.js', [], SEAL_ILL_VERSION, true );
+    }
+
+    /**
+     * Public Requests: the checked library-system codes as a comma list ('' = none). Codes are kept as entered
+     * (they come from Org Rules or the library table); commas and anything unsafe are removed.
+     */
+    public static function san_pr_systems( $val ): string {
+        $codes = [];
+        foreach ( (array) $val as $c ) {
+            $c = trim( str_replace( ',', '', sanitize_text_field( (string) $c ) ) );
+            if ( $c !== '' ) { $codes[ strtolower( $c ) ] = $c; }
+        }
+        return implode( ',', $codes );
+    }
+
+    /**
+     * Public Requests: one checkbox per library system (Org Rules → Library Systems, plus any other system code
+     * found on a participating library), with how many of its libraries the form would offer and their names.
+     * Suspended libraries are listed greyed out, with their end date, so it's clear why they're missing from the form.
+     */
+    public static function field_pr_systems(): void {
+        $opted = SEAL_Module_PublicRequest::opted_systems();
+        $libs  = SEAL_Module_PublicRequest::eligible_libraries();
+        $by    = [];   // lower-cased code => [ [ name, suspended, until ], ... ]
+        $none  = 0;    // eligible libraries with no system code
+        foreach ( (array) $libs as $l ) {
+            $code = strtolower( trim( $l['system'] ) );
+            if ( $code === '' ) { $none++; continue; }
+            $by[ $code ][] = [ $l['name'], ! empty( $l['suspended'] ), (string) ( $l['until'] ?? '' ) ];
+        }
+
+        $systems = [];   // lower-cased code => [ code, label, in Org Rules ]
+        foreach ( SEAL_Org_Rules::systems() as $code => $label ) {
+            $systems[ strtolower( (string) $code ) ] = [ (string) $code, (string) $label, true ];
+        }
+        foreach ( (array) $libs as $l ) {
+            $k = strtolower( trim( $l['system'] ) );
+            if ( $k !== '' && ! isset( $systems[ $k ] ) ) { $systems[ $k ] = [ trim( $l['system'] ), trim( $l['system'] ), false ]; }
+        }
+        foreach ( $opted as $k ) {   // keep a saved choice visible even if its system has since gone
+            if ( ! isset( $systems[ $k ] ) ) { $systems[ $k ] = [ $k, $k, false ]; }
+        }
+
+        if ( $libs === null ) {
+            echo '<div class="notice notice-error inline" style="margin:0 0 12px;"><p>The ILL database could not be read, so library counts are not shown. Check <a href="' . esc_url( admin_url( 'admin.php?page=' . self::PAGES['database'] ) ) . '">ILL System &rarr; Database</a>.</p></div>';
+        }
+        if ( ! $systems ) {
+            echo '<p>No library systems are set up yet. Add them under <a href="' . esc_url( admin_url( 'admin.php?page=' . self::PAGES['rules'] ) ) . '">Org Rules &rarr; Library Systems</a>.</p>';
+            return;
+        }
+
+        echo '<fieldset><legend class="screen-reader-text">Library systems that take part in public book requests</legend>';
+        echo '<table class="widefat striped" style="max-width:680px;"><thead><tr><th scope="col" style="width:1%;">Offer</th><th scope="col">Library system</th><th scope="col">Libraries offered</th></tr></thead><tbody>';
+        foreach ( $systems as $k => [ $code, $label, $known ] ) {
+            $id    = 'seal_pr_sys_' . md5( $k );
+            $names = $by[ $k ] ?? [];
+            $susp  = count( array_filter( $names, static fn( $n ) => $n[1] ) );
+            $open  = count( $names ) - $susp;
+            echo '<tr><td><input type="checkbox" id="' . esc_attr( $id ) . '" name="seal_pr_systems[]" value="' . esc_attr( $code ) . '" ' . checked( in_array( $k, $opted, true ), true, false ) . '></td>';
+            echo '<td><label for="' . esc_attr( $id ) . '"><strong>' . esc_html( $label ) . '</strong></label> <code>' . esc_html( $code ) . '</code>'
+               . ( $known ? '' : ' <em>(not in Org Rules)</em>' ) . '</td><td>';
+            if ( $libs === null ) {
+                echo '&mdash;';
+            } elseif ( ! $names ) {
+                echo '<span style="color:#646970;">None (no participating library with an ILL email)</span>';
+            } else {
+                $sum = ( $open ? $open . ( $open === 1 ? ' library' : ' libraries' ) : 'None right now' ) . ( $susp ? ' (' . $susp . ' suspended)' : '' );
+                echo '<details><summary>' . esc_html( $sum ) . '</summary><ul style="margin:6px 0 0 18px;list-style:disc;">';
+                foreach ( $names as [ $n, $is_susp, $until ] ) {
+                    if ( ! $is_susp ) { echo '<li>' . esc_html( $n ) . '</li>'; continue; }
+                    $ts = $until !== '' ? strtotime( $until . ' 12:00:00' ) : false;
+                    echo '<li style="color:#646970;">' . esc_html( $n ) . ' <em>(suspended' . esc_html( $ts ? ' until ' . wp_date( 'F j, Y', $ts ) : '' ) . '; not offered)</em></li>';
+                }
+                echo '</ul></details>';
+            }
+            echo '</td></tr>';
+        }
+        echo '</tbody></table></fieldset>';
+        if ( $none ) {
+            echo '<p class="description">' . esc_html( $none . ( $none === 1 ? ' participating library has' : ' participating libraries have' ) . ' no library system code, so ' . ( $none === 1 ? 'it' : 'they' ) . ' can\'t be offered. Set a system on ' . ( $none === 1 ? 'it' : 'them' ) . ' in the Library Directory.' ) . '</p>';
+        }
     }
 
     /** Stores a toggle as '1' or '0' (an unchecked box would otherwise save nothing). */

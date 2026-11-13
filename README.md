@@ -1,6 +1,6 @@
 # ILL System — WordPress Plugin
 
-**Version:** 3.18.0  
+**Version:** 3.20.0  
 **Author:** SENYLRC Systems Department  
 **Source:** https://github.com/SENYLRC/SEAL-4 (successor to [SEAL-3](https://github.com/SENYLRC/SEAL-3))  
 
@@ -156,7 +156,8 @@ seal-ill-system/
 ## Built-in modules (replace the old separate plugins)
 
 What used to be separate plugins in SEAL-3's `Word_Press_Plugins/` folder is now built in, under **ILL → Modules**
-(user fields, login redirect, terms of service, catalog search, user export, dashboard, user approval, last login)
+(user fields, login redirect, terms of service, catalog search, user export, dashboard, user approval, last login,
+public book requests)
 and **ILL → Security** (login screen, login URL, login protection, password rules, two-factor, file monitor).
 **Deactivate and delete the old plugins** (`senylrc-custom-user-fields`, `senylrc-login-redirect`, `senylrc-tos`,
 `senylrc-seal-search`, `ill_mkws`, `senylrc-export-users`, `senylrc_dashboard_tweak`) so the same hooks don't run twice.
@@ -198,6 +199,33 @@ page, Advanced Search and Help links, the categories.js URL, and the category
 dropdown (one `value|Label` per line; start a line with `*` to pre-select it).
 The `aria-label` on the search box uses the configured System Name
 ("Search {System Name} Union Catalog").
+
+
+## Public Book Requests ("Request a Book")
+
+A form that anyone can use **without logging in** to ask for a book. Turn on **Public Book Requests** under
+**ILL → Modules** (off by default), then put this shortcode on any WordPress page:
+
+```
+[ill_book_request]
+```
+
+The visitor enters the book title, an email address and/or phone number (at least one), their library card number,
+and picks the library to collect the book from. An optional note to the library (up to 256 characters) goes in
+the email too. The pickup list holds every participating library (`participant` = 1) that
+has an ILL email address, **is not suspended** (it reappears when the suspension ends), **and belongs to a library
+system that has opted in**, grouped by library system.
+
+Choose the systems under **ILL → Public Requests**: one checkbox per library system (from Org Rules → Library Systems,
+plus any other system code found on a participating library), each showing which of its libraries the form would
+offer; suspended libraries are listed greyed out with their end date. **No system is checked at first**, so the form offers no libraries until you opt one in. Libraries with no
+system code can't be offered. Changes are recorded in Change History. The request is **emailed to that library's ILL email address**
+(with Reply-To set to the patron's email when given); nothing is stored. Email test mode (ILL → Contacts & Email)
+applies as for every other plugin email.
+
+Spam guards (no CAPTCHA needed, and they work on cached pages): a hidden honeypot field, a signed "form shown at"
+time that refuses submissions made within 3 seconds, and at most 5 requests an hour from one address (the address
+comes from the same setting as Login Protection's IP header). With the module off, the shortcode shows nothing.
 
 
 ## Security suite (v3.3.0)
