@@ -77,7 +77,7 @@ class SEAL_Module_PublicRequest {
         $codes = [];
         foreach ( is_array( $val ) ? $val : explode( ',', (string) $val ) as $c ) {
             $c = trim( str_replace( ',', '', sanitize_text_field( (string) $c ) ) );
-            if ( $c !== '' ) { $codes[ strtolower( $c ) ] = $c; }
+            if ( $c !== '' ) { $codes[ strtolower( $c ) ] ??= $c; }
         }
         return implode( ',', $codes );
     }
