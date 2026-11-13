@@ -91,6 +91,12 @@ t( "suspend values '0', 'No' and '' mean open", ! SEAL_Module_PublicRequest::is_
 [ $e ] = SEAL_Module_PublicRequest::validate( [ 'seal_pr_library' => '4' ] + $good, SEAL_Module_PublicRequest::filter_opted( $sus, [ 'se' ] ) );
 t( 'submitting a suspended library is refused', isset( $e['library'] ) );
 
+$s = static fn( $v ) => SEAL_Module_PublicRequest::sanitize_systems( $v );
+t( 'systems: checkbox array saved as a comma list', $s( [ 'SE', 'MH' ] ) === 'SE,MH', $s( [ 'SE', 'MH' ] ) );
+t( 'systems: sanitizing twice (first save) keeps codes separate', $s( $s( [ 'SE', 'MH', 'RCLS' ] ) ) === 'SE,MH,RCLS', $s( $s( [ 'SE', 'MH', 'RCLS' ] ) ) );
+t( 'systems: duplicates dropped regardless of case', $s( [ 'SE', 'se', ' MH ' ] ) === 'SE,MH' );
+t( 'systems: nothing checked saves empty', $s( null ) === '' && $s( '' ) === '' && $s( [] ) === '' );
+
 $now = 1_800_000_000;
 $tok = SEAL_Module_PublicRequest::make_token( $now - 10 );
 t( 'token age is the seconds since it was made', SEAL_Module_PublicRequest::token_age( $tok, $now ) === 10 );

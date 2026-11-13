@@ -1247,15 +1247,11 @@ class SEAL_Admin {
 
     /**
      * Public Requests: the checked library-system codes as a comma list ('' = none). Codes are kept as entered
-     * (they come from Org Rules or the library table); commas and anything unsafe are removed.
+     * (they come from Org Rules or the library table); anything unsafe is removed. See
+     * SEAL_Module_PublicRequest::sanitize_systems() for why an already-saved comma list must be accepted too.
      */
     public static function san_pr_systems( $val ): string {
-        $codes = [];
-        foreach ( (array) $val as $c ) {
-            $c = trim( str_replace( ',', '', sanitize_text_field( (string) $c ) ) );
-            if ( $c !== '' ) { $codes[ strtolower( $c ) ] = $c; }
-        }
-        return implode( ',', $codes );
+        return SEAL_Module_PublicRequest::sanitize_systems( $val );
     }
 
     /**

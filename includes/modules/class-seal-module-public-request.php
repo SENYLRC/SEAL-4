@@ -50,6 +50,21 @@ class SEAL_Module_PublicRequest {
     }
 
     /**
+     * Sanitizes the seal_pr_systems setting to a comma list of codes ('' = none), de-duplicated without regard
+     * to case. Takes the checkbox array or an already-saved comma list: WordPress runs a setting's sanitizer a
+     * second time on the first save (update_option → add_option), so the comma list must split back into codes
+     * rather than be squashed into one ("SE,MH" → "SEMH").
+     */
+    public static function sanitize_systems( $val ): string {
+        $codes = [];
+        foreach ( is_array( $val ) ? $val : explode( ',', (string) $val ) as $c ) {
+            $c = trim( str_replace( ',', '', sanitize_text_field( (string) $c ) ) );
+            if ( $c !== '' ) { $codes[ strtolower( $c ) ] = $c; }
+        }
+        return implode( ',', $codes );
+    }
+
+    /**
      * Pickup libraries: recnum => [ 'name', 'system', 'email', 'suspended', 'until' ]. Participants with an ILL
      * email that aren't suspended and whose library system has opted in, sorted by system then name. Empty when
      * there are none, or the database can't be reached.
