@@ -1331,25 +1331,3 @@ ul.seal-stats-breakdown ul.seal-stats-outcomes > li::before { content: "\2013\00
 .seal-decide-form button { padding: 4px 10px; font-size: .85rem; }
 :is(.rh-table, .seal-table) td.seal-nowrap { white-space: nowrap; }
 .seal-acct-hist { display: inline-block; margin-left: 6px; font-size: .85rem; }
-
-/* ── Public "Request a Book" form ([ill_book_request], SEAL_Module_PublicRequest) ── */
-.seal-pr { max-width: 36rem; }
-.seal-pr-form .seal-pr-row { display: flex; flex-direction: column; margin: 0 0 16px; }
-.seal-pr-form label,
-.seal-pr-form legend { font-weight: 600; margin-bottom: 4px; }
-.seal-pr-form input[type=text],
-.seal-pr-form input[type=email],
-.seal-pr-form input[type=tel],
-.seal-pr-form select,
-.seal-pr-form textarea {
-    padding: 8px 10px; border: 1px solid #767676; border-radius: 6px; font-size: 1rem; max-width: 100%;
-}
-.seal-pr-form [aria-invalid=true] { border-color: #b32d2e; border-width: 2px; }
-.seal-pr-contact { border: 1px solid #c3c4c7; border-radius: 6px; padding: 10px 14px 0; margin: 0 0 16px; }
-.seal-pr-contact[aria-invalid=true] { border-color: #b32d2e; border-width: 2px; }
-.seal-pr-form textarea { font-family: inherit; resize: vertical; }
-.seal-pr-optional { font-weight: normal; color: #50575e; }
-.seal-pr-row .seal-pr-hint { margin: 4px 0 0; }
-.seal-pr-hint, .seal-pr-note { font-size: .9rem; color: #50575e; margin: 0 0 10px; }
-.seal-pr-err { display: block; color: #b32d2e; font-size: .9rem; margin-top: 4px; }
-.seal-pr-hp { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }

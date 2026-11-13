@@ -37,6 +37,24 @@ class SEAL_Module_PublicRequest {
     public static function init(): void {
         add_shortcode( self::SHORTCODE, [ __CLASS__, 'render' ] );
         add_action( 'template_redirect', [ __CLASS__, 'handle_post' ] );
+        add_action( 'wp_enqueue_scripts', [ __CLASS__, 'maybe_enqueue' ] );
+    }
+
+    /**
+     * Loads the form's own stylesheet in <head> on a page whose content has the shortcode. Enqueueing only from
+     * render() would print it in the footer, after the page is drawn, so the layout would jump when it arrives.
+     * (The plugin's seal-style.css is deliberately not used: it restyles the theme for the ILL pages.)
+     */
+    public static function maybe_enqueue(): void {
+        $post = get_queried_object();
+        if ( $post instanceof WP_Post && has_shortcode( (string) $post->post_content, self::SHORTCODE ) ) {
+            self::enqueue_style();
+        }
+    }
+
+    /** Registers and enqueues the form's stylesheet (safe to call more than once). */
+    private static function enqueue_style(): void {
+        wp_enqueue_style( 'seal-public-request', SEAL_ILL_PLUGIN_URL . 'assets/seal-public-request.css', [], SEAL_ILL_VERSION );
     }
 
     // ── Libraries ─────────────────────────────────────────────────────────────
@@ -259,11 +277,11 @@ class SEAL_Module_PublicRequest {
 
     /** [ill_book_request]: the form, the "request sent" message, or a notice when no libraries are available. */
     public static function render( $atts = [] ): string {
-        wp_enqueue_style( 'seal-style', SEAL_ILL_PLUGIN_URL . 'assets/seal-style.css', [], SEAL_ILL_VERSION );
+        self::enqueue_style();   // already in <head> via maybe_enqueue(); this covers the shortcode used in a widget or template
 
         if ( ( $_GET[ self::SENT_ARG ] ?? '' ) === 'sent' && ! self::$errors ) {
             $again = remove_query_arg( self::SENT_ARG, SEAL_Functions::self_url() );
-            return '<div class="seal-alert seal-alert-success seal-pr-done" role="status"><p><strong>Thank you! Your request has been sent.</strong></p>'
+            return '<div class="seal-alert seal-alert-success seal-pr-msg seal-pr-done" role="status"><p><strong>Thank you! Your request has been sent.</strong></p>'
                  . '<p>The library you chose will contact you about your book.</p>'
                  . '<p><a href="' . esc_url( $again ) . '">Request another book</a></p></div>';
         }
@@ -277,7 +295,7 @@ class SEAL_Module_PublicRequest {
                     : 'no library system has opted in, or the opted-in systems have no participating, unsuspended library with an ILL email address.' )
                     . ' <a href="' . esc_url( admin_url( 'admin.php?page=seal-ill-pubreq' ) ) . '">Public Requests settings</a></p>';
             }
-            return '<div class="seal-alert seal-alert-info" role="status"><p>Book requests are not available right now. Please contact your library.</p>' . $why . '</div>';
+            return '<div class="seal-alert seal-alert-info seal-pr-msg" role="status"><p>Book requests are not available right now. Please contact your library.</p>' . $why . '</div>';
         }
 
         $v   = self::$values + [ 'title' => '', 'email' => '', 'phone' => '', 'card' => '', 'library' => 0, 'note' => '' ];
